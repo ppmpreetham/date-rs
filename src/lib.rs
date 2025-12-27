@@ -1,8 +1,9 @@
 #![deny(clippy::all)]
 
+use napi::JsObject as Object;
 use napi_derive::napi;
 use time::util::{days_in_year, days_in_year_month};
-use time::{Duration, Month, OffsetDateTime};
+use time::{Duration, Month, OffsetDateTime, Weekday};
 
 // addMilliseconds, addSeconds, addMinutes, addHours,
 // addDays, addWeeks, addMonths, addQuarters, addYears
@@ -160,6 +161,10 @@ fn trunc_toward_zero(v: f64) -> i64 {
     v.floor() as i64
   }
 }
+
+fn to_ms(dt: OffsetDateTime) -> f64 {
+  dt.unix_timestamp_nanos() as f64 / 1_000_000.0
+}
 // -- end helper fns
 
 #[napi]
@@ -234,6 +239,352 @@ pub fn difference_in_years(a_ms: f64, b_ms: f64) -> i64 {
 // eachQuarterOfInterval,
 // eachYearOfInterval,
 // eachWeekendOfInterval
+
+#[napi(object)]
+pub struct DurationParts {
+  pub years: Option<i32>,
+  pub months: Option<i32>,
+  pub days: Option<i32>,
+  pub hours: Option<i32>,
+  pub minutes: Option<i32>,
+  pub seconds: Option<i32>,
+}
+
+#[napi]
+pub fn interval_to_duration(start_ms: f64, end_ms: f64) -> DurationParts {
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return DurationParts {
+      years: None,
+      months: None,
+      days: None,
+      hours: None,
+      minutes: None,
+      seconds: None,
+    };
+  };
+
+  if start > end {
+    std::mem::swap(&mut start, &mut end);
+  }
+
+  let mut duration = DurationParts {
+    years: None,
+    months: None,
+    days: None,
+    hours: None,
+    minutes: None,
+    seconds: None,
+  };
+
+  let years = difference_in_years(to_ms(end), to_ms(start)) as i32;
+  if years != 0 {
+    duration.years = Some(years);
+  }
+  let after_years = add_years(to_ms(start), years as f64);
+
+  let months = difference_in_months(to_ms(end), after_years) as i32;
+  if months != 0 {
+    duration.months = Some(months);
+  }
+  let after_months = add_months(after_years, months as f64);
+
+  let days = difference_in_days(to_ms(end), after_months) as i32;
+  if days != 0 {
+    duration.days = Some(days);
+  }
+  let after_days = add_days(after_months, days as f64);
+
+  let hours = difference_in_hours(to_ms(end), after_days) as i32;
+  if hours != 0 {
+    duration.hours = Some(hours);
+  }
+  let after_hours = add_hours(after_days, hours as f64);
+
+  let minutes = difference_in_minutes(to_ms(end), after_hours) as i32;
+  if minutes != 0 {
+    duration.minutes = Some(minutes);
+  }
+  let after_minutes = add_minutes(after_hours, minutes as f64);
+
+  let seconds = difference_in_seconds(to_ms(end), after_minutes) as i32;
+  if seconds != 0 {
+    duration.seconds = Some(seconds);
+  }
+
+  duration
+}
+
+#[napi]
+pub fn min(dates: Vec<f64>) -> f64 {
+  if dates.is_empty() || dates.iter().any(|&d| !d.is_finite()) {
+    return f64::NAN;
+  }
+  dates.into_iter().fold(f64::INFINITY, f64::min)
+}
+
+#[napi]
+pub fn max(dates: Vec<f64>) -> f64 {
+  if dates.is_empty() || dates.iter().any(|&d| !d.is_finite()) {
+    return f64::NAN;
+  }
+  dates.into_iter().fold(f64::NEG_INFINITY, f64::max)
+}
+
+#[napi]
+pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step: Option<i64>) -> Vec<f64> {
+  let step = step.unwrap_or(1);
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  let reverse = step < 0 || start > end;
+  let abs_step = step.abs() as i64;
+  if reverse {
+    std::mem::swap(&mut start, &mut end);
+  }
+
+  let mut res = vec![];
+  start = start.replace_time(time::Time::MIDNIGHT);
+  end = end.replace_time(time::Time::MIDNIGHT);
+
+  while start <= end {
+    res.push(to_ms(start));
+    start += Duration::days(abs_step);
+  }
+
+  if reverse {
+    res.reverse();
+  }
+  res
+}
+
+#[napi]
+pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>) -> Vec<f64> {
+  let week_starts_on = options
+    .as_ref()
+    .and_then(|o| o.get_named_property::<u8>("weekStartsOn").ok())
+    .unwrap_or(0);
+  let step = options
+    .as_ref()
+    .and_then(|o| o.get_named_property::<i64>("step").ok())
+    .unwrap_or(1);
+
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  if step == 0 {
+    return vec![];
+  }
+
+  let reverse = step < 0 || start > end;
+  let abs_step = step.abs();
+
+  if reverse {
+    std::mem::swap(&mut start, &mut end);
+  }
+
+  let target_weekday = Weekday::try_from(week_starts_on).unwrap_or(Weekday::Sunday);
+  while start.weekday() != target_weekday {
+    start -= Duration::days(1);
+  }
+
+  let mut res = vec![];
+  start = start.replace_time(time::Time::MIDNIGHT);
+
+  while start <= end {
+    res.push(to_ms(start));
+    start += Duration::weeks(abs_step);
+  }
+
+  if reverse {
+    res.reverse();
+  }
+  res
+}
+#[napi]
+pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) -> Vec<f64> {
+  let step = step_opt.unwrap_or(1);
+  if step == 0 {
+    return vec![];
+  }
+
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  let mut reversed = start > end;
+  let end_time = if reversed { start } else { end };
+  let mut date = if reversed { end } else { start };
+
+  if step < 0 {
+    reversed = !reversed;
+  }
+  let step = step.abs();
+
+  date = date
+    .replace_time(time::Time::MIDNIGHT)
+    .replace_day(1)
+    .unwrap();
+
+  let mut res = vec![];
+
+  while date <= end_time {
+    res.push(to_ms(date));
+    date = date + Duration::days(0);
+    let next_month = date.month() as i32 - 1 + step;
+    let mut year = date.year() + next_month.div_euclid(12);
+    let month = Month::try_from((next_month.rem_euclid(12) + 1) as u8).unwrap();
+    date = date
+      .replace_year(year)
+      .and_then(|d| d.replace_month(month))
+      .and_then(|d| d.replace_day(1))
+      .unwrap();
+  }
+
+  if reversed {
+    res.reverse();
+  }
+
+  res
+}
+
+#[napi]
+pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> Vec<f64> {
+  let step = step.unwrap_or(1);
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  if step == 0 {
+    return vec![];
+  }
+
+  let reverse = step < 0 || start > end;
+  let abs_step = step.abs() as i32;
+  if reverse {
+    std::mem::swap(&mut start, &mut end);
+  }
+
+  let mut year = start.year();
+  let mut quarter = ((start.month() as i32 - 1) / 3) + 1;
+
+  let mut res = vec![];
+
+  loop {
+    let month = Month::try_from(((quarter - 1) * 3 + 1) as u8).unwrap();
+    let Ok(dt) = start
+      .replace_year(year)
+      .and_then(|d| d.replace_month(month))
+      .and_then(|d| d.replace_day(1))
+      .and_then(|d| d.replace_time(time::Time::MIDNIGHT))
+    else {
+      break;
+    };
+
+    if dt > end {
+      break;
+    }
+    res.push(to_ms(dt));
+
+    quarter += abs_step;
+    while quarter > 4 {
+      quarter -= 4;
+      year += 1;
+    }
+  }
+
+  if reverse {
+    res.reverse();
+  }
+  res
+}
+
+#[napi]
+pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> Vec<f64> {
+  let step = step.unwrap_or(1);
+  let (Some(start), Some(end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  let reverse = step < 0 || start > end;
+  let abs_step = step.abs() as i32;
+  if reverse {
+    let temp = start;
+    start = end;
+    end = temp;
+  }
+
+  let mut year = start.year();
+
+  let mut res = vec![];
+
+  loop {
+    let Ok(dt) = start
+      .replace_year(year)
+      .and_then(|d| d.replace_month(Month::January))
+      .and_then(|d| d.replace_day(1))
+      .and_then(|d| d.replace_time(time::Time::MIDNIGHT))
+    else {
+      break;
+    };
+    if dt > end {
+      break;
+    }
+    res.push(to_ms(dt));
+    year += abs_step;
+  }
+
+  if reverse {
+    res.reverse();
+  }
+  res
+}
+
+#[napi]
+pub fn each_weekend_of_interval(start_ms: f64, end_ms: f64) -> Vec<f64> {
+  each_day_of_interval(start_ms, end_ms, None)
+    .into_iter()
+    .filter(|&d| {
+      from_ms(d).unwrap().weekday() == Weekday::Saturday
+        || from_ms(d).unwrap().weekday() == Weekday::Sunday
+    })
+    .collect()
+}
+
+#[napi(object)]
+pub struct Interval {
+  pub start: f64,
+  pub end: f64,
+}
+
+#[napi]
+pub fn interval_to_daily_intervals(start_ms: f64, end_ms: f64) -> Vec<Interval> {
+  let (Some(mut s), Some(mut e)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
+
+  let reverse = s > e;
+  if reverse {
+    std::mem::swap(&mut s, &mut e);
+  }
+
+  let mut res = vec![];
+
+  while s < e {
+    let next = (s + Duration::days(1)).min(e);
+    res.push(Interval {
+      start: to_ms(s),
+      end: to_ms(next),
+    });
+    s = next;
+  }
+
+  if reverse {
+    res.reverse();
+  }
+  res
+}
 
 // compareAsc, compareDesc,
 // isEqual, isBefore, isAfter,
