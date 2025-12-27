@@ -1,10 +1,9 @@
+
 [package]
 authors = ["LongYinan <lynweklm@gmail.com>"]
 edition = "2021"
-name = "napi-package-template"
+name = "date_rs"
 version = "0.1.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 crate-type = ["cdylib"]
@@ -12,6 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = "3.0.0"
 napi-derive = "3.0.0"
+time = { version = "0.3.44", features = ["macros"] }
 
 [build-dependencies]
 napi-build = "2"
