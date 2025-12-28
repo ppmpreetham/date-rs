@@ -76,12 +76,25 @@ More coming: `format`, `parseISO`, `startOfDay`, `isBefore`, etc.
 
 ## Performance
 
-Heavy month additions (1M operations):
-
-- date-fns: ~850ms
-- **date-rs**: ~45ms (**18x faster**)
-
-(Tested on M1 MacBook, real-world gains even higher on servers.)
+Performance Comparison (date-rs vs date-fns)
+| #  | Operation                | date-rs (ops/sec) | date-fns (ops/sec) | Speedup |
+| -- | ------------------------ | -------------- | ------------------ | ------: |
+| 0  | addDays                  | 9,735,210      | 4,436,033          |   2.19x |
+| 1  | addMonths                | 1,290,617      | 2,405,921          |   0.54x |
+| 2  | addYears                 | 1,304,327      | 2,435,951          |   0.54x |
+| 3  | differenceInDays         | 10,046,153     | 476,835            |  21.07x |
+| 4  | differenceInMonths       | 534,292        | 536,591            |   1.00x |
+| 5  | differenceInYears        | 531,558        | 841,040            |   0.63x |
+| 6  | min                      | 2,843,677      | 1,171,226          |   2.43x |
+| 7  | max                      | 2,760,072      | 1,204,440          |   2.29x |
+| 8  | isWeekend                | 1,457,684      | 7,288,419          |   0.20x |
+| 9  | eachDayOfInterval        | 206,257        | 94,628             |   2.18x |
+| 10 | eachMonthOfInterval      | 346,165        | 271,307            |   1.28x |
+| 11 | compareAsc               | 10,045,283     | 3,557,989          |   2.82x |
+| 12 | isAfter                  | 10,702,804     | 3,648,799          |   2.93x |
+| 13 | isBefore                 | 9,944,303      | 3,563,595          |   2.79x |
+| 14 | addBusinessDays          | 1,378,186      | 2,398,528          |   0.57x |
+| 15 | differenceInBusinessDays | 532,662        | 261,855            |   2.03x |
 
 ## Contributing
 
