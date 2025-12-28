@@ -1,5 +1,6 @@
 name: CI
 env:
+  TZ: Asia/Kolkata
   DEBUG: napi:*
   APP_NAME: date-rs
   MACOSX_DEPLOYMENT_TARGET: '10.13'
