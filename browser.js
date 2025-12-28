@@ -1,1 +1,1 @@
-export * from 'date-rs-wasm32-wasi'
+export * from '@date-rs/date-rs-wasm32-wasi'

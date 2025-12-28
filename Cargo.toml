@@ -14,7 +14,7 @@ napi-derive = "3.0.0"
 
 [dependencies.time]
 version = "0.3.44"
-features = ["macros"]
+features = ["local-offset"]
 
 [build-dependencies]
 napi-build = "2"
