@@ -557,6 +557,8 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
+module.exports.add = nativeBinding.add
+module.exports.addBusinessDays = nativeBinding.addBusinessDays
 module.exports.addDays = nativeBinding.addDays
 module.exports.addHours = nativeBinding.addHours
 module.exports.addMilliseconds = nativeBinding.addMilliseconds
@@ -566,6 +568,14 @@ module.exports.addQuarters = nativeBinding.addQuarters
 module.exports.addSeconds = nativeBinding.addSeconds
 module.exports.addWeeks = nativeBinding.addWeeks
 module.exports.addYears = nativeBinding.addYears
+module.exports.areIntervalsOverlapping = nativeBinding.areIntervalsOverlapping
+module.exports.clamp = nativeBinding.clamp
+module.exports.closestIndexTo = nativeBinding.closestIndexTo
+module.exports.closestTo = nativeBinding.closestTo
+module.exports.compareAsc = nativeBinding.compareAsc
+module.exports.compareDesc = nativeBinding.compareDesc
+module.exports.differenceInBusinessDays = nativeBinding.differenceInBusinessDays
+module.exports.differenceInCalendarDays = nativeBinding.differenceInCalendarDays
 module.exports.differenceInDays = nativeBinding.differenceInDays
 module.exports.differenceInHours = nativeBinding.differenceInHours
 module.exports.differenceInMilliseconds = nativeBinding.differenceInMilliseconds
@@ -583,6 +593,13 @@ module.exports.eachWeekOfInterval = nativeBinding.eachWeekOfInterval
 module.exports.eachYearOfInterval = nativeBinding.eachYearOfInterval
 module.exports.intervalToDailyIntervals = nativeBinding.intervalToDailyIntervals
 module.exports.intervalToDuration = nativeBinding.intervalToDuration
+module.exports.isAfter = nativeBinding.isAfter
+module.exports.isBefore = nativeBinding.isBefore
+module.exports.isEqual = nativeBinding.isEqual
+module.exports.isSameDay = nativeBinding.isSameDay
+module.exports.isSaturday = nativeBinding.isSaturday
+module.exports.isSunday = nativeBinding.isSunday
+module.exports.isWeekend = nativeBinding.isWeekend
 module.exports.max = nativeBinding.max
 module.exports.min = nativeBinding.min
 module.exports.subDays = nativeBinding.subDays

@@ -1,7 +1,9 @@
 #![deny(clippy::all)]
 
-use napi::bindgen_prelude::Object;
+use napi::bindgen_prelude::{Object, Undefined};
+use napi::Either;
 use napi_derive::napi;
+
 use time::util::days_in_month;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
@@ -95,6 +97,228 @@ pub fn add_years(date_ms: f64, amount: f64) -> f64 {
   add_months(date_ms, amount * 12.0)
 }
 
+#[napi(object)]
+pub struct DurationInput {
+  pub years: Option<f64>,
+  pub months: Option<f64>,
+  pub weeks: Option<f64>,
+  pub days: Option<f64>,
+  pub hours: Option<f64>,
+  pub minutes: Option<f64>,
+  pub seconds: Option<f64>,
+}
+
+#[napi]
+pub fn add(date_ms: f64, duration: DurationInput) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let years = duration.years.unwrap_or(0.0).trunc();
+  let months = duration.months.unwrap_or(0.0).trunc();
+  let weeks = duration.weeks.unwrap_or(0.0).trunc();
+  let days = duration.days.unwrap_or(0.0).trunc();
+  let hours = duration.hours.unwrap_or(0.0).trunc();
+  let minutes = duration.minutes.unwrap_or(0.0).trunc();
+  let seconds = duration.seconds.unwrap_or(0.0).trunc();
+
+  let months_total = months + years * 12.0;
+  let date_after_months = if months_total != 0.0 {
+    add_months(date_ms, months_total)
+  } else {
+    date_ms
+  };
+
+  let days_total = days + weeks * 7.0;
+  let date_after_days = if days_total != 0.0 {
+    add_days(date_after_months, days_total)
+  } else {
+    date_after_months
+  };
+
+  let minutes_total = minutes + hours * 60.0;
+  let seconds_total = seconds + minutes_total * 60.0;
+  let ms_total = seconds_total * 1000.0;
+
+  date_after_days + ms_total
+}
+
+#[napi]
+pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
+  if !date_ms.is_finite() || amount.is_nan() {
+    return f64::NAN;
+  }
+
+  let mut result = date_ms;
+  let started_on_weekend = is_weekend(result);
+  let hours = ((result / 1000.0).trunc() as i64 % 86400) / 3600;
+
+  let sign = if amount < 0.0 { -1.0 } else { 1.0 };
+  let amount_i = amount.trunc() as i32;
+
+  let full_weeks = amount_i / 5;
+  result = add_days(result, (full_weeks * 7) as f64);
+
+  let mut rest = (amount_i % 5).abs();
+
+  while rest > 0 {
+    result = add_days(result, sign);
+    if !is_weekend(result) {
+      rest -= 1;
+    }
+  }
+
+  if started_on_weekend && is_weekend(result) && amount_i != 0 {
+    if is_saturday(result) {
+      result = add_days(result, if sign < 0.0 { 2.0 } else { -1.0 });
+    }
+    if is_sunday(result) {
+      result = add_days(result, if sign < 0.0 { 1.0 } else { -2.0 });
+    }
+  }
+
+  result + (hours as f64) * 3_600_000.0
+}
+
+#[napi]
+pub fn are_intervals_overlapping(
+  left_start: f64,
+  left_end: f64,
+  right_start: f64,
+  right_end: f64,
+  inclusive: Option<bool>,
+) -> bool {
+  if !left_start.is_finite()
+    || !left_end.is_finite()
+    || !right_start.is_finite()
+    || !right_end.is_finite()
+  {
+    return false;
+  }
+
+  let (l1, l2) = if left_start <= left_end {
+    (left_start, left_end)
+  } else {
+    (left_end, left_start)
+  };
+
+  let (r1, r2) = if right_start <= right_end {
+    (right_start, right_end)
+  } else {
+    (right_end, right_start)
+  };
+
+  if inclusive.unwrap_or(false) {
+    l1 <= r2 && r1 <= l2
+  } else {
+    l1 < r2 && r1 < l2
+  }
+}
+
+#[napi]
+pub fn clamp(date_ms: f64, start_ms: f64, end_ms: f64) -> f64 {
+  if !date_ms.is_finite() || !start_ms.is_finite() || !end_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let (start, end) = if start_ms <= end_ms {
+    (start_ms, end_ms)
+  } else {
+    (end_ms, start_ms)
+  };
+
+  if date_ms < start {
+    start
+  } else if date_ms > end {
+    end
+  } else {
+    date_ms
+  }
+}
+enum SearchResult {
+  Found(usize),
+  InvalidData, // NaN
+  Empty,       // undefined
+}
+
+fn find_closest_idx_internal(target_ms: f64, dates: &[f64]) -> SearchResult {
+  if !target_ms.is_finite() {
+    return SearchResult::InvalidData;
+  }
+
+  if dates.is_empty() {
+    return SearchResult::Empty;
+  }
+
+  let mut best_index: Option<usize> = None;
+  let mut best_distance = f64::MAX;
+
+  for (i, ts) in dates.iter().enumerate() {
+    if !ts.is_finite() {
+      return SearchResult::InvalidData;
+    }
+
+    let dist = (target_ms - ts).abs();
+
+    if best_index.is_none() || dist < best_distance {
+      best_index = Some(i);
+      best_distance = dist;
+    }
+  }
+
+  match best_index {
+    Some(i) => SearchResult::Found(i),
+    None => SearchResult::Empty,
+  }
+}
+
+#[napi]
+pub fn closest_index_to(target_ms: f64, dates: Vec<f64>) -> Either<f64, Undefined> {
+  match find_closest_idx_internal(target_ms, &dates) {
+    SearchResult::Found(idx) => Either::A(idx as f64),
+    SearchResult::InvalidData => Either::A(f64::NAN),
+    SearchResult::Empty => Either::B(()),
+  }
+}
+
+#[napi]
+pub fn closest_to(target_ms: f64, dates: Vec<f64>) -> Either<f64, Undefined> {
+  match find_closest_idx_internal(target_ms, &dates) {
+    SearchResult::Found(idx) => {
+      let val = dates[idx];
+      Either::A(val)
+    }
+    SearchResult::InvalidData => Either::A(f64::NAN),
+    SearchResult::Empty => Either::B(()),
+  }
+}
+
+#[napi]
+pub fn compare_asc(date_left_ms: f64, date_right_ms: f64) -> f64 {
+  let diff = date_left_ms - date_right_ms;
+
+  if diff < 0.0 {
+    -1.0
+  } else if diff > 0.0 {
+    1.0
+  } else {
+    diff
+  }
+}
+
+#[napi]
+pub fn compare_desc(date_left_ms: f64, date_right_ms: f64) -> f64 {
+  let diff = date_left_ms - date_right_ms;
+
+  if diff > 0.0 {
+    -1.0
+  } else if diff < 0.0 {
+    1.0
+  } else {
+    diff
+  }
+}
+
 // subMilliseconds, subSeconds, subMinutes,
 // subHours, subDays, subWeeks, subMonths,
 // subQuarters, subYears
@@ -161,7 +385,7 @@ fn from_ms_local(ms: f64) -> Option<OffsetDateTime> {
   }
 
   let utc = OffsetDateTime::from_unix_timestamp_nanos((ms * 1_000_000.0) as i128).ok()?;
-  let offset = UtcOffset::current_local_offset().ok()?;
+  let offset = UtcOffset::local_offset_at(utc).ok()?;
   Some(utc.to_offset(offset))
 }
 
@@ -206,6 +430,81 @@ fn add_months_local(ms: f64, amount: i32) -> Option<OffsetDateTime> {
 }
 
 // -- end helper fns
+
+#[napi]
+pub fn difference_in_calendar_days(later_ms: f64, earlier_ms: f64) -> f64 {
+  use time::Time;
+
+  if !later_ms.is_finite() || !earlier_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let (Some(later), Some(earlier)) = (from_ms_local(later_ms), from_ms_local(earlier_ms)) else {
+    return f64::NAN;
+  };
+
+  let later_midnight = later
+    .date()
+    .with_time(Time::MIDNIGHT)
+    .assume_offset(later.offset());
+
+  let earlier_midnight = earlier
+    .date()
+    .with_time(Time::MIDNIGHT)
+    .assume_offset(earlier.offset());
+
+  let later_ts = later_midnight.unix_timestamp_nanos() as f64 / 1_000_000.0;
+
+  let earlier_ts = earlier_midnight.unix_timestamp_nanos() as f64 / 1_000_000.0;
+
+  let diff_days = (later_ts - earlier_ts) / 86_400_000.0;
+
+  diff_days.round()
+}
+
+#[napi]
+pub fn is_same_day(a_ms: f64, b_ms: f64) -> bool {
+  let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
+    return false;
+  };
+
+  a.date() == b.date()
+}
+
+#[napi]
+pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
+  if !later_ms.is_finite() || !earlier_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let diff = difference_in_calendar_days(later_ms, earlier_ms);
+
+  if diff == 0.0 {
+    return 0.0;
+  }
+
+  let sign = if diff < 0.0 { -1.0 } else { 1.0 };
+
+  let weeks = (diff / 7.0).trunc();
+
+  let mut result = weeks * 5.0;
+
+  let mut moving = add_days(earlier_ms, weeks * 7.0);
+
+  while !is_same_day(later_ms, moving) {
+    if !is_weekend(moving) {
+      result += sign;
+    }
+
+    moving = add_days(moving, sign);
+  }
+
+  if result == 0.0 {
+    0.0
+  } else {
+    result
+  }
+}
 
 #[napi]
 pub fn difference_in_milliseconds(a_ms: f64, b_ms: f64) -> f64 {
@@ -286,13 +585,12 @@ pub fn difference_in_weeks(a_ms: f64, b_ms: f64) -> i64 {
 // Current: local calendar months (== date-fns)
 // Future:  UTC calendar months (== @date-fns/utc)
 #[napi]
-pub fn difference_in_months(a_ms: f64, b_ms: f64) -> i64 {
+pub fn difference_in_months(a_ms: f64, b_ms: f64) -> f64 {
   let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
-    return 0;
+    return f64::NAN;
   };
 
   let sign = if a >= b { 1 } else { -1 };
-
   let years = a.year() - b.year();
   let mut months = years * 12 + (a.month() as i32 - b.month() as i32);
 
@@ -304,18 +602,18 @@ pub fn difference_in_months(a_ms: f64, b_ms: f64) -> i64 {
     months += 1;
   }
 
-  months as i64
+  months as f64
 }
 
 #[napi]
 pub fn difference_in_quarters(a_ms: f64, b_ms: f64) -> i64 {
-  trunc_toward_zero(difference_in_months(a_ms, b_ms) as f64 / 3.0)
+  trunc_toward_zero(difference_in_months(a_ms, b_ms) / 3.0)
 }
 
 #[napi]
 pub fn difference_in_years(a_ms: f64, b_ms: f64) -> i64 {
   let months = difference_in_months(a_ms, b_ms);
-  trunc_toward_zero(months as f64 / 12.0)
+  trunc_toward_zero(months / 12.0)
 }
 
 // intervalToDuration,
@@ -330,24 +628,24 @@ pub fn difference_in_years(a_ms: f64, b_ms: f64) -> i64 {
 
 #[napi(object)]
 pub struct DurationParts {
-  pub years: Option<i32>,
-  pub months: Option<i32>,
-  pub days: Option<i32>,
-  pub hours: Option<i32>,
-  pub minutes: Option<i32>,
-  pub seconds: Option<i32>,
+  pub years: i32,
+  pub months: i32,
+  pub days: i32,
+  pub hours: i32,
+  pub minutes: i32,
+  pub seconds: i32,
 }
 
 #[napi]
 pub fn interval_to_duration(start_ms: f64, end_ms: f64) -> DurationParts {
   let (Some(mut start), Some(mut end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
     return DurationParts {
-      years: None,
-      months: None,
-      days: None,
-      hours: None,
-      minutes: None,
-      seconds: None,
+      years: 0,
+      months: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
     };
   };
 
@@ -355,66 +653,63 @@ pub fn interval_to_duration(start_ms: f64, end_ms: f64) -> DurationParts {
     std::mem::swap(&mut start, &mut end);
   }
 
-  let mut duration = DurationParts {
-    years: None,
-    months: None,
-    days: None,
-    hours: None,
-    minutes: None,
-    seconds: None,
+  let mut d = DurationParts {
+    years: 0,
+    months: 0,
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
   };
 
   let years = difference_in_years(to_ms(end), to_ms(start)) as i32;
-  if years != 0 {
-    duration.years = Some(years);
-  }
+  d.years = years;
   let after_years = add_years(to_ms(start), years as f64);
 
   let months = difference_in_months(to_ms(end), after_years) as i32;
-  if months != 0 {
-    duration.months = Some(months);
-  }
+  d.months = months;
   let after_months = add_months(after_years, months as f64);
 
   let days = difference_in_days(to_ms(end), after_months) as i32;
-  if days != 0 {
-    duration.days = Some(days);
-  }
+  d.days = days;
   let after_days = add_days(after_months, days as f64);
 
   let hours = difference_in_hours(to_ms(end), after_days) as i32;
-  if hours != 0 {
-    duration.hours = Some(hours);
-  }
+  d.hours = hours;
   let after_hours = add_hours(after_days, hours as f64);
 
   let minutes = difference_in_minutes(to_ms(end), after_hours) as i32;
-  if minutes != 0 {
-    duration.minutes = Some(minutes);
-  }
+  d.minutes = minutes;
   let after_minutes = add_minutes(after_hours, minutes as f64);
 
   let seconds = difference_in_seconds(to_ms(end), after_minutes) as i32;
-  if seconds != 0 {
-    duration.seconds = Some(seconds);
-  }
+  d.seconds = seconds;
 
-  duration
+  d
 }
-
 #[napi]
 pub fn min(dates: Vec<f64>) -> f64 {
-  if dates.is_empty() || dates.iter().any(|&d| !d.is_finite()) {
+  if dates.is_empty() {
     return f64::NAN;
   }
+
+  if dates.iter().any(|d| d.is_nan()) {
+    return f64::NAN;
+  }
+
   dates.into_iter().fold(f64::INFINITY, f64::min)
 }
 
 #[napi]
 pub fn max(dates: Vec<f64>) -> f64 {
-  if dates.is_empty() || dates.iter().any(|&d| !d.is_finite()) {
+  if dates.is_empty() {
     return f64::NAN;
   }
+
+  if dates.iter().any(|d| d.is_nan()) {
+    return f64::NAN;
+  }
+
   dates.into_iter().fold(f64::NEG_INFINITY, f64::max)
 }
 
@@ -809,8 +1104,47 @@ pub fn interval_to_daily_intervals(start_ms: f64, end_ms: f64) -> Vec<Interval> 
   res
 }
 
-// compareAsc, compareDesc,
-// isEqual, isBefore, isAfter,
+#[napi]
+pub fn is_equal(date_left_ms: f64, date_right_ms: f64) -> bool {
+  date_left_ms == date_right_ms
+}
+
+#[napi]
+pub fn is_after(date_ms: f64, compare_ms: f64) -> bool {
+  date_ms > compare_ms
+}
+
+#[napi]
+pub fn is_before(date_ms: f64, compare_ms: f64) -> bool {
+  date_ms < compare_ms
+}
+
+#[napi]
+pub fn is_weekend(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  matches!(dt.weekday(), Weekday::Saturday | Weekday::Sunday)
+}
+
+#[napi]
+pub fn is_saturday(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  dt.weekday() == Weekday::Saturday
+}
+
+#[napi]
+pub fn is_sunday(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  dt.weekday() == Weekday::Sunday
+}
 
 // isValid,
 // isToday,
