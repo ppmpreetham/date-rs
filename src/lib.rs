@@ -37,6 +37,7 @@ pub fn add_days(date_ms: f64, amount: f64) -> f64 {
 pub fn add_weeks(date_ms: f64, amount: f64) -> f64 {
   date_ms + amount * 604_800_000.0
 }
+
 #[napi]
 pub fn add_months(date_ms: f64, amount: f64) -> f64 {
   if !date_ms.is_finite() || !amount.is_finite() {
@@ -236,6 +237,54 @@ pub fn difference_in_weeks(a_ms: f64, b_ms: f64) -> i64 {
   trunc_toward_zero((a_ms - b_ms) / 604_800_000.0)
 }
 
+// LOCAL CALENDAR DIFFERENCE (date-fns compatible)
+// ----------------------------------------------
+// This implementation intentionally mirrors `date-fns`:
+//
+//   differenceInMonths(a, b)
+//
+// which computes the difference using LOCAL TIME semantics.
+//
+// Key behavior:
+//
+//  • Inputs are converted via from_ms_local(...)
+//      → timestamps are interpreted in the system time zone
+//
+//  • Calendar math is done on LOCAL YEAR + MONTH values
+//
+//  • The fractional month remainder is discarded toward zero
+//      (i.e., the result is an integer count of whole calendar months)
+//
+//  • Correction logic adjusts for overshoot:
+//      difference = months between calendar labels
+//      then shift b forward by that many months in LOCAL TIME
+//      and step back/forward if we crossed past `a`
+//
+// This matches:
+//
+//   date-fns.differenceInMonths()
+//
+// including DST transitions & odd-length months.
+//
+// ----------------------------------------------
+// HOW TO MAKE THIS UTC (future /utc build)
+// ----------------------------------------------
+//
+// 1) Replace from_ms_local(...) → from_ms(...)
+//      → interpret timestamps as UTC, not local
+//
+// 2) Perform the same calendar math on UTC components
+//
+// 3) Keep the overshoot-correction logic the same
+//
+// Result will match:
+//
+//   @date-fns/utc.differenceInMonths()
+//
+// ----------------------------------------------
+// TL;DR
+// Current: local calendar months (== date-fns)
+// Future:  UTC calendar months (== @date-fns/utc)
 #[napi]
 pub fn difference_in_months(a_ms: f64, b_ms: f64) -> i64 {
   let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
@@ -427,6 +476,37 @@ pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>
   res
 }
 
+// NOTE ABOUT LOCAL VS UTC
+// -----------------------
+// This function currently mirrors `date-fns` behavior,
+// which works in LOCAL TIME.
+//
+// Meaning:
+//  - Input timestamps are converted using from_ms_local()
+//  - Month boundaries are computed in local calendar time
+//  - Generated values correspond to *local month start midnight*
+//
+// This ensures:
+//
+//   eachMonthOfInterval === date-fns.eachMonthOfInterval
+//
+// -----------------------
+// HOW TO MAKE THIS UTC (future /utc build)
+// -----------------------
+// 1️ Replace from_ms_local(...) with from_ms(...)
+//    -> timestamps stay in UTC
+//
+// 2️ When constructing month boundaries:
+//      Date::from_calendar_date(...)
+//    should be considered UTC directly
+//
+// 3️ You no longer need to preserve or reapply offsets
+//
+// -----------------------
+// TL;DR
+// Current: Local calendar months (matches date-fns)
+// Future:  Pure UTC calendar months (matches @date-fns/utc)
+
 #[napi]
 pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) -> Vec<f64> {
   let step = step_opt.unwrap_or(1);
@@ -531,6 +611,36 @@ pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -
   res
 }
 
+// LOCAL TIME BEHAVIOR
+// -------------------
+// This function follows `date-fns` semantics,
+// which operate entirely in LOCAL TIME.
+//
+// That means yearly iteration happens like:
+//
+//   Jan 1st LOCAL MIDNIGHT each year
+//
+// and depends on the system time zone.
+//
+// This guarantees test equivalence with:
+//
+//   date-fns.eachYearOfInterval
+//
+// -----------------------
+// HOW TO CONVERT TO UTC (future /utc lib)
+// -----------------------
+// 1️ Use from_ms(...) instead of from_ms_local(...)
+//    -> read timestamps as UTC
+//
+// 2️ Construct Jan 1 UTC midnight boundaries
+//
+// 3️ Remove all reliance on UtcOffset
+//
+// -----------------------
+// TL;DR
+// Current: Local-timezone year boundaries
+// Future:  Strict UTC year boundaries
+
 #[napi]
 pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) -> Vec<f64> {
   let step = step_opt.unwrap_or(1);
@@ -576,6 +686,36 @@ pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) 
 
   res
 }
+
+// NOTE ABOUT TIME ZONES
+// ---------------------
+// This function intentionally follows the behavior of `date-fns`
+// which operates in LOCAL TIME, not UTC.
+//
+// That means:
+//  - We convert timestamps using from_ms_local()
+//  - We strip time to midnight LOCAL TIME
+//  - Iteration happens at local-day boundaries
+//
+// This is why the results MATCH `date-fns` but differ from
+// `@date-fns/utc`, which treats all dates as UTC.
+//
+// ---------------------
+// HOW TO CONVERT THIS TO UTC (for a future /utc build)
+// ---------------------
+// 1️ Replace from_ms_local(...) with from_ms(...)
+//    -> this removes the local offset
+//
+// 2️ Normalize to UTC midnight instead of local midnight
+//    dt.replace_time(Time::MIDNIGHT) already does this correctly
+//    once the OffsetDateTime is UTC
+//
+// 3️ Remove all UtcOffset handling — it becomes unnecessary
+//
+// ---------------------
+// TL;DR
+// Current: LOCAL midnight iteration  == date-fns
+// Future:  UTC midnight iteration    == @date-fns/utc
 
 #[napi]
 pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -> Vec<f64> {
