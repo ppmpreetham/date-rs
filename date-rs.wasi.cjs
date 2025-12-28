@@ -32,16 +32,16 @@ const __sharedMemory = new WebAssembly.Memory({
   shared: true,
 })
 
-let __wasmFilePath = __nodePath.join(__dirname, 'package-template.wasm32-wasi.wasm')
-const __wasmDebugFilePath = __nodePath.join(__dirname, 'package-template.wasm32-wasi.debug.wasm')
+let __wasmFilePath = __nodePath.join(__dirname, 'date-rs.wasm32-wasi.wasm')
+const __wasmDebugFilePath = __nodePath.join(__dirname, 'date-rs.wasm32-wasi.debug.wasm')
 
 if (__nodeFs.existsSync(__wasmDebugFilePath)) {
   __wasmFilePath = __wasmDebugFilePath
 } else if (!__nodeFs.existsSync(__wasmFilePath)) {
   try {
-    __wasmFilePath = __nodePath.resolve('@napi-rs/package-template-pnpm-wasm32-wasi')
+    __wasmFilePath = __nodePath.resolve('date-rs-wasm32-wasi')
   } catch {
-    throw new Error('Cannot find package-template.wasm32-wasi.wasm file, and @napi-rs/package-template-pnpm-wasm32-wasi package is not installed.')
+    throw new Error('Cannot find date-rs.wasm32-wasi.wasm file, and date-rs-wasm32-wasi package is not installed.')
   }
 }
 
@@ -108,4 +108,40 @@ const { instance: __napiInstance, module: __wasiModule, napiModule: __napiModule
   },
 })
 module.exports = __napiModule.exports
-module.exports.plus100 = __napiModule.exports.plus100
+module.exports.addDays = __napiModule.exports.addDays
+module.exports.addHours = __napiModule.exports.addHours
+module.exports.addMilliseconds = __napiModule.exports.addMilliseconds
+module.exports.addMinutes = __napiModule.exports.addMinutes
+module.exports.addMonths = __napiModule.exports.addMonths
+module.exports.addQuarters = __napiModule.exports.addQuarters
+module.exports.addSeconds = __napiModule.exports.addSeconds
+module.exports.addWeeks = __napiModule.exports.addWeeks
+module.exports.addYears = __napiModule.exports.addYears
+module.exports.differenceInDays = __napiModule.exports.differenceInDays
+module.exports.differenceInHours = __napiModule.exports.differenceInHours
+module.exports.differenceInMilliseconds = __napiModule.exports.differenceInMilliseconds
+module.exports.differenceInMinutes = __napiModule.exports.differenceInMinutes
+module.exports.differenceInMonths = __napiModule.exports.differenceInMonths
+module.exports.differenceInQuarters = __napiModule.exports.differenceInQuarters
+module.exports.differenceInSeconds = __napiModule.exports.differenceInSeconds
+module.exports.differenceInWeeks = __napiModule.exports.differenceInWeeks
+module.exports.differenceInYears = __napiModule.exports.differenceInYears
+module.exports.eachDayOfInterval = __napiModule.exports.eachDayOfInterval
+module.exports.eachMonthOfInterval = __napiModule.exports.eachMonthOfInterval
+module.exports.eachQuarterOfInterval = __napiModule.exports.eachQuarterOfInterval
+module.exports.eachWeekendOfInterval = __napiModule.exports.eachWeekendOfInterval
+module.exports.eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
+module.exports.eachYearOfInterval = __napiModule.exports.eachYearOfInterval
+module.exports.intervalToDailyIntervals = __napiModule.exports.intervalToDailyIntervals
+module.exports.intervalToDuration = __napiModule.exports.intervalToDuration
+module.exports.max = __napiModule.exports.max
+module.exports.min = __napiModule.exports.min
+module.exports.subDays = __napiModule.exports.subDays
+module.exports.subHours = __napiModule.exports.subHours
+module.exports.subMilliseconds = __napiModule.exports.subMilliseconds
+module.exports.subMinutes = __napiModule.exports.subMinutes
+module.exports.subMonths = __napiModule.exports.subMonths
+module.exports.subQuarters = __napiModule.exports.subQuarters
+module.exports.subSeconds = __napiModule.exports.subSeconds
+module.exports.subWeeks = __napiModule.exports.subWeeks
+module.exports.subYears = __napiModule.exports.subYears

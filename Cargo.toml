@@ -11,7 +11,10 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = "3.0.0"
 napi-derive = "3.0.0"
-time = { version = "0.3.44", features = ["macros"] }
+
+[dependencies.time]
+version = "0.3.44"
+features = ["macros"]
 
 [build-dependencies]
 napi-build = "2"
