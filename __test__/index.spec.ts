@@ -2,11 +2,6 @@ import test from 'ava'
 import * as dateFns from 'date-fns'
 import * as dateRs from '../index.js'
 
-// Helper to compare results
-const compareResults = (t: any, dateRsResult: any, dateFnsResult: any, testName: string) => {
-  t.deepEqual(dateRsResult, dateFnsResult, `${testName} should match date-fns`)
-}
-
 // Add functions comparison
 test('addMilliseconds matches date-fns', (t) => {
   const date = new Date('2024-01-15')
@@ -109,6 +104,46 @@ test('addYears matches date-fns', (t) => {
 })
 
 // Sub functions comparison
+test('subMilliseconds matches date-fns', (t) => {
+  const date = new Date('2024-01-15T10:30:00')
+  const amount = 5000
+  
+  const rsResult = dateRs.subMilliseconds(date.getTime(), amount)
+  const fnsResult = dateFns.subMilliseconds(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
+test('subSeconds matches date-fns', (t) => {
+  const date = new Date('2024-01-15T10:30:00')
+  const amount = 30
+  
+  const rsResult = dateRs.subSeconds(date.getTime(), amount)
+  const fnsResult = dateFns.subSeconds(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
+test('subMinutes matches date-fns', (t) => {
+  const date = new Date('2024-01-15T10:30:00')
+  const amount = 15
+  
+  const rsResult = dateRs.subMinutes(date.getTime(), amount)
+  const fnsResult = dateFns.subMinutes(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
+test('subHours matches date-fns', (t) => {
+  const date = new Date('2024-01-15T10:00:00')
+  const amount = 3
+  
+  const rsResult = dateRs.subHours(date.getTime(), amount)
+  const fnsResult = dateFns.subHours(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
 test('subDays matches date-fns', (t) => {
   const date = new Date('2024-01-15')
   const amount = 5
@@ -119,6 +154,16 @@ test('subDays matches date-fns', (t) => {
   t.is(rsResult, fnsResult)
 })
 
+test('subWeeks matches date-fns', (t) => {
+  const date = new Date('2024-01-15')
+  const amount = 2
+  
+  const rsResult = dateRs.subWeeks(date.getTime(), amount)
+  const fnsResult = dateFns.subWeeks(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
 test('subMonths matches date-fns', (t) => {
   const date = new Date('2024-03-31')
   const amount = 1
@@ -126,6 +171,26 @@ test('subMonths matches date-fns', (t) => {
   const rsResult = dateRs.subMonths(date.getTime(), amount)
   const fnsResult = dateFns.subMonths(date, amount).getTime()
 
+  t.is(rsResult, fnsResult)
+})
+
+test('subQuarters matches date-fns', (t) => {
+  const date = new Date('2024-07-15')
+  const amount = 1
+  
+  const rsResult = dateRs.subQuarters(date.getTime(), amount)
+  const fnsResult = dateFns.subQuarters(date, amount).getTime()
+  
+  t.is(rsResult, fnsResult)
+})
+
+test('subYears matches date-fns', (t) => {
+  const date = new Date('2024-01-15')
+  const amount = 2
+  
+  const rsResult = dateRs.subYears(date.getTime(), amount)
+  const fnsResult = dateFns.subYears(date, amount).getTime()
+  
   t.is(rsResult, fnsResult)
 })
 
@@ -217,6 +282,26 @@ test('differenceInYears matches date-fns', (t) => {
   const rsResult = dateRs.differenceInYears(date1.getTime(), date2.getTime())
   const fnsResult = dateFns.differenceInYears(date1, date2)
 
+  t.is(rsResult, fnsResult)
+})
+
+test('differenceInCalendarDays matches date-fns', (t) => {
+  const date1 = new Date('2024-01-20')
+  const date2 = new Date('2024-01-15')
+  
+  const rsResult = dateRs.differenceInCalendarDays(date1.getTime(), date2.getTime())
+  const fnsResult = dateFns.differenceInCalendarDays(date1, date2)
+  
+  t.is(rsResult, fnsResult)
+})
+
+test('differenceInBusinessDays matches date-fns', (t) => {
+  const date1 = new Date('2024-01-20')
+  const date2 = new Date('2024-01-15')
+  
+  const rsResult = dateRs.differenceInBusinessDays(date1.getTime(), date2.getTime())
+  const fnsResult = dateFns.differenceInBusinessDays(date1, date2)
+  
   t.is(rsResult, fnsResult)
 })
 
