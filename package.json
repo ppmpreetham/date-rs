@@ -1,19 +1,19 @@
 {
   "name": "date-rs",
   "version": "1.1.1",
-  "description": "Template project for writing node package with napi-rs",
+  "description": "Fastest date utility library replacing date-fns powered by Rust and N-API",
   "main": "index.js",
   "types": "index.d.ts",
   "browser": "browser.js",
   "repository": {
-    "url": "git+ssh://git@github.com/napi-rs/package-template-pnpm.git",
+    "url": "git+ssh://git@github.com/ppmpreetham/date-rs.git",
     "type": "git"
   },
   "license": "MIT",
   "keywords": [
-    "napi-rs",
-    "NAPI",
-    "N-API",
+    "date-rs",
+    "date-fns",
+    "date-library",
     "Rust",
     "node-addon",
     "node-addon-api"
