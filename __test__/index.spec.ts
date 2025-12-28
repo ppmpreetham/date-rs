@@ -430,3 +430,354 @@ test('startOfDay matches date-fns', (t) => {
     }
   }
 })
+
+// Comparison function tests
+test('compareAsc matches date-fns', (t) => {
+  const earlierDate = new Date('2024-01-15T10:00:00Z')
+  const laterDate = new Date('2024-01-20T10:00:00Z')
+
+  // dateLeft < dateRight should return -1
+  t.is(dateRs.compareAsc(earlierDate.getTime(), laterDate.getTime()), -1)
+  t.is(dateFns.compareAsc(earlierDate, laterDate), -1)
+
+  // dateLeft > dateRight should return 1
+  t.is(dateRs.compareAsc(laterDate.getTime(), earlierDate.getTime()), 1)
+  t.is(dateFns.compareAsc(laterDate, earlierDate), 1)
+
+  // Equal dates should return 0
+  const sameDate1 = new Date('2024-01-15T10:00:00Z')
+  const sameDate2 = new Date('2024-01-15T10:00:00Z')
+  t.is(dateRs.compareAsc(sameDate1.getTime(), sameDate2.getTime()), 0)
+  t.is(dateFns.compareAsc(sameDate1, sameDate2), 0)
+
+  console.log('✓ compareAsc: basic functionality')
+})
+
+test('compareDesc matches date-fns', (t) => {
+  const earlierDate = new Date('2024-01-15T10:00:00Z')
+  const laterDate = new Date('2024-01-20T10:00:00Z')
+  const sameDate = new Date('2024-01-15T10:00:00Z')
+
+  // dateLeft < dateRight should return 1 (reverse order)
+  t.is(dateRs.compareDesc(earlierDate.getTime(), laterDate.getTime()), 1)
+  t.is(dateFns.compareDesc(earlierDate, laterDate), 1)
+
+  // dateLeft > dateRight should return -1 (reverse order)
+  t.is(dateRs.compareDesc(laterDate.getTime(), earlierDate.getTime()), -1)
+  t.is(dateFns.compareDesc(laterDate, earlierDate), -1)
+
+  // Equal dates should return 0
+  t.is(dateRs.compareDesc(sameDate.getTime(), sameDate.getTime()), 0)
+  t.is(dateFns.compareDesc(sameDate, sameDate), 0)
+
+  console.log('✓ compareDesc: basic functionality')
+})
+
+test('isEqual matches date-fns', (t) => {
+  const date1 = new Date('2024-01-15T10:30:00Z')
+  const date2 = new Date('2024-01-15T10:30:00Z')
+  const date3 = new Date('2024-01-15T10:30:01Z')
+
+  // Exactly equal dates
+  t.is(dateRs.isEqual(date1.getTime(), date2.getTime()), true)
+  t.is(dateFns.isEqual(date1, date2), true)
+
+  // Different dates
+  t.is(dateRs.isEqual(date1.getTime(), date3.getTime()), false)
+  t.is(dateFns.isEqual(date1, date3), false)
+
+  console.log('✓ isEqual: exact and different dates')
+})
+
+test('isEqual EPSILON tolerance', (t) => {
+  const date1 = new Date('2024-01-15T10:30:00Z')
+  const date2 = new Date('2024-01-15T10:30:00.0005Z')
+
+  // Within 1ms tolerance should return true
+  t.is(dateRs.isEqual(date1.getTime(), date2.getTime()), true)
+  t.is(dateFns.isEqual(date1, date2), true)
+
+  console.log('✓ isEqual: 0.5ms within tolerance')
+})
+
+test('isBefore matches date-fns', (t) => {
+  const earlierDate = new Date('2024-01-15T10:00:00Z')
+  const laterDate = new Date('2024-01-20T10:00:00Z')
+  const sameDate = new Date('2024-01-15T10:00:00Z')
+
+  // Earlier date
+  t.is(dateRs.isBefore(earlierDate.getTime(), laterDate.getTime()), true)
+  t.is(dateFns.isBefore(earlierDate, laterDate), true)
+
+  // Later date (not before)
+  t.is(dateRs.isBefore(laterDate.getTime(), earlierDate.getTime()), false)
+  t.is(dateFns.isBefore(laterDate, earlierDate), false)
+
+  // Same date (not before itself)
+  t.is(dateRs.isBefore(sameDate.getTime(), sameDate.getTime()), false)
+  t.is(dateFns.isBefore(sameDate, sameDate), false)
+
+  console.log('✓ isBefore: earlier/later/same date')
+})
+
+test('isAfter matches date-fns', (t) => {
+  const earlierDate = new Date('2024-01-15T10:00:00Z')
+  const laterDate = new Date('2024-01-20T10:00:00Z')
+  const sameDate = new Date('2024-01-15T10:00:00Z')
+
+  // Later date
+  t.is(dateRs.isAfter(laterDate.getTime(), earlierDate.getTime()), true)
+  t.is(dateFns.isAfter(laterDate, earlierDate), true)
+
+  // Earlier date (not after)
+  t.is(dateRs.isAfter(earlierDate.getTime(), laterDate.getTime()), false)
+  t.is(dateFns.isAfter(earlierDate, laterDate), false)
+
+  // Same date (not after itself)
+  t.is(dateRs.isAfter(sameDate.getTime(), sameDate.getTime()), false)
+  t.is(dateFns.isAfter(sameDate, sameDate), false)
+
+  console.log('✓ isAfter: later/earlier/same date')
+})
+
+test('compareAsc with NaN returns NaN', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.truthy(isNaN(dateRs.compareAsc(NaN, validDate.getTime())))
+  t.truthy(isNaN(dateFns.compareAsc(NaN, validDate.getTime())))
+
+  t.truthy(isNaN(dateRs.compareAsc(validDate.getTime(), NaN)))
+  t.truthy(isNaN(dateFns.compareAsc(validDate, NaN)))
+
+  t.truthy(isNaN(dateRs.compareAsc(NaN, NaN)))
+  t.truthy(isNaN(dateFns.compareAsc(NaN, NaN)))
+
+  console.log('✓ compareAsc: NaN handling')
+})
+
+test('compareDesc with NaN returns NaN', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.truthy(isNaN(dateRs.compareDesc(NaN, validDate.getTime())))
+  t.truthy(isNaN(dateFns.compareDesc(NaN, validDate.getTime())))
+
+  t.truthy(isNaN(dateRs.compareDesc(validDate.getTime(), NaN)))
+  t.truthy(isNaN(dateFns.compareDesc(validDate, NaN)))
+
+  t.truthy(isNaN(dateRs.compareDesc(NaN, NaN)))
+  t.truthy(isNaN(dateFns.compareDesc(NaN, NaN)))
+
+  console.log('✓ compareDesc: NaN handling')
+})
+
+test('isEqual with NaN returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isEqual(NaN, validDate.getTime()), false)
+  t.is(dateFns.isEqual(NaN, validDate.getTime()), false)
+
+  t.is(dateRs.isEqual(validDate.getTime(), NaN), false)
+  t.is(dateFns.isEqual(validDate.getTime(), NaN), false)
+
+  t.is(dateRs.isEqual(NaN, NaN), false)
+  t.is(dateFns.isEqual(NaN, NaN), false)
+
+  console.log('✓ isEqual: NaN handling')
+})
+
+test('isBefore with NaN returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isBefore(NaN, validDate.getTime()), false)
+  t.is(dateFns.isBefore(NaN, validDate.getTime()), false)
+
+  t.is(dateRs.isBefore(validDate.getTime(), NaN), false)
+  t.is(dateFns.isBefore(validDate.getTime(), NaN), false)
+
+  console.log('✓ isBefore: NaN handling')
+})
+
+test('isAfter with NaN returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isAfter(NaN, validDate.getTime()), false)
+  t.is(dateFns.isAfter(NaN, validDate.getTime()), false)
+
+  t.is(dateRs.isAfter(validDate.getTime(), NaN), false)
+  t.is(dateFns.isAfter(validDate.getTime(), NaN), false)
+
+  console.log('✓ isAfter: NaN handling')
+})
+
+test('compareAsc with Infinity returns NaN', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.truthy(isNaN(dateRs.compareAsc(Infinity, validDate.getTime())))
+  t.truthy(isNaN(dateRs.compareAsc(validDate.getTime(), Infinity)))
+
+  t.truthy(isNaN(dateRs.compareAsc(Infinity, Infinity)))
+
+  console.log('✓ compareAsc: Infinity handling')
+})
+
+test('compareDesc with Infinity returns NaN', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.truthy(isNaN(dateRs.compareDesc(Infinity, validDate.getTime())))
+  t.truthy(isNaN(dateRs.compareDesc(validDate.getTime(), Infinity)))
+
+  t.truthy(isNaN(dateRs.compareDesc(Infinity, Infinity)))
+
+  console.log('✓ compareDesc: Infinity handling')
+})
+
+test('isEqual with Infinity returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isEqual(Infinity, validDate.getTime()), false)
+  t.is(dateFns.isEqual(Infinity, validDate.getTime()), false)
+
+  t.is(dateRs.isEqual(validDate.getTime(), Infinity), false)
+
+  t.is(dateRs.isEqual(Infinity, Infinity), false)
+
+  t.is(dateFns.isEqual(Infinity, Infinity), false)
+
+  console.log('✓ isEqual: Infinity handling')
+})
+
+test('isBefore with Infinity returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isBefore(Infinity, validDate.getTime()), false)
+  t.is(dateFns.isBefore(Infinity, validDate.getTime()), false)
+
+  t.is(dateRs.isBefore(validDate.getTime(), Infinity), false)
+
+  console.log('✓ isBefore: Infinity handling')
+})
+
+test('isAfter with Infinity returns false', (t) => {
+  const validDate = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isAfter(Infinity, validDate.getTime()), false)
+  t.is(dateFns.isAfter(Infinity, validDate.getTime()), false)
+
+  t.is(dateRs.isAfter(validDate.getTime(), Infinity), false)
+
+  console.log('✓ isAfter: Infinity handling')
+})
+
+test('compareAsc sorts dates correctly', (t) => {
+  const dates = [
+    new Date('2024-01-20T10:00:00Z'),
+    new Date('2024-01-15T10:00:00Z'),
+    new Date('2024-01-25T10:00:00Z'),
+    new Date('2024-01-18T10:00:00Z'),
+  ].map((d) => d.getTime())
+
+  const sorted = [...dates].sort(dateRs.compareAsc)
+  const fnsSorted = [...dates].sort(dateFns.compareAsc)
+
+  t.deepEqual(sorted, fnsSorted)
+
+  console.log('✓ compareAsc: sorting')
+})
+
+test('compareDesc sorts dates correctly (reverse)', (t) => {
+  const dates = [
+    new Date('2024-01-20T10:00:00Z'),
+    new Date('2024-01-15T10:00:00Z'),
+    new Date('2024-01-25T10:00:00Z'),
+    new Date('2024-01-18T10:00:00Z'),
+  ].map((d) => d.getTime())
+
+  const sorted = [...dates].sort(dateRs.compareDesc)
+  const fnsSorted = [...dates].sort(dateFns.compareDesc)
+
+  t.deepEqual(sorted, fnsSorted)
+
+  console.log('✓ compareDesc: sorting')
+})
+
+test('comparison functions handle leap years', (t) => {
+  const leapYearDate = new Date('2024-02-29T10:00:00Z')
+  const nonLeapYearDate = new Date('2023-02-28T10:00:00Z')
+
+  const leapYearTimestamp = leapYearDate.getTime()
+  const nonLeapYearTimestamp = nonLeapYearDate.getTime()
+
+  t.is(dateRs.isEqual(leapYearTimestamp, leapYearTimestamp), true)
+  t.is(dateRs.isBefore(leapYearTimestamp, nonLeapYearTimestamp), true)
+  t.is(dateRs.isAfter(nonLeapYearTimestamp, leapYearTimestamp), true)
+
+  console.log('✓ comparison: leap year handling')
+})
+
+test('comparison functions handle midnight boundaries', (t) => {
+  const midnightDate = new Date('2024-01-15T00:00:00Z')
+  const noonDate = new Date('2024-01-15T12:00:00Z')
+
+  t.is(dateRs.isBefore(midnightDate.getTime(), noonDate.getTime()), true)
+  t.is(dateRs.isAfter(noonDate.getTime(), midnightDate.getTime()), true)
+  t.is(dateRs.compareAsc(midnightDate.getTime(), noonDate.getTime()), -1)
+  t.is(dateRs.compareDesc(noonDate.getTime(), midnightDate.getTime()), -1)
+
+  console.log('✓ comparison: midnight boundaries')
+})
+
+test('comparison functions with today/yesterday/tomorrow', (t) => {
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+
+  const yesterday = new Date(dateRs.subDays(today.getTime(), 1))
+  const tomorrow = new Date(dateRs.addDays(today.getTime(), 1))
+
+  t.is(dateRs.isBefore(yesterday.getTime(), today.getTime()), true)
+  t.is(dateRs.isBefore(today.getTime(), tomorrow.getTime()), true)
+  t.is(dateRs.isAfter(today.getTime(), yesterday.getTime()), true)
+  t.is(dateRs.isAfter(tomorrow.getTime(), today.getTime()), true)
+  t.is(dateRs.compareAsc(yesterday.getTime(), today.getTime()), -1)
+  t.is(dateRs.compareAsc(today.getTime(), tomorrow.getTime()), -1)
+
+  console.log('✓ comparison: today/yesterday/tomorrow')
+})
+
+test('comparison functions with date ranges', (t) => {
+  const startDate = new Date('2024-01-15T10:00:00Z')
+  const endDate = new Date('2024-01-20T10:00:00Z')
+  const beforeRange = new Date('2024-01-10T10:00:00Z')
+  const afterRange = new Date('2024-01-25T10:00:00Z')
+
+  t.is(dateRs.isBefore(startDate.getTime(), endDate.getTime()), true)
+  t.is(dateRs.isAfter(endDate.getTime(), startDate.getTime()), true)
+
+  t.is(dateRs.isAfter(beforeRange.getTime(), startDate.getTime()), false)
+  t.is(dateRs.isBefore(afterRange.getTime(), endDate.getTime()), false)
+
+  console.log('✓ comparison: date ranges')
+})
+
+test('comparison functions with duplicate dates', (t) => {
+  const date1 = new Date('2024-01-15T10:00:00Z')
+  const date2 = new Date('2024-01-15T10:00:00Z')
+
+  t.is(dateRs.isEqual(date1.getTime(), date2.getTime()), true)
+  t.is(dateRs.isBefore(date1.getTime(), date2.getTime()), false)
+  t.is(dateRs.isAfter(date1.getTime(), date2.getTime()), false)
+  t.is(dateRs.compareAsc(date1.getTime(), date2.getTime()), 0)
+  t.is(dateRs.compareDesc(date1.getTime(), date2.getTime()), 0)
+
+  console.log('✓ comparison: duplicate dates')
+})
+
+test('comparison functions with extreme dates', (t) => {
+  const epochDate = new Date(0)
+  const farFuture = new Date(8640000000000000)
+
+  t.is(dateRs.isBefore(epochDate.getTime(), farFuture.getTime()), true)
+  t.is(dateRs.isAfter(farFuture.getTime(), epochDate.getTime()), true)
+  t.is(dateRs.compareAsc(epochDate.getTime(), farFuture.getTime()), -1)
+
+  console.log('✓ comparison: extreme dates')
+})

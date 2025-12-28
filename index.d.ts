@@ -18,6 +18,10 @@ export declare function addWeeks(dateMs: number, amount: number): number
 
 export declare function addYears(dateMs: number, amount: number): number
 
+export declare function compareAsc(dateLeft: number, dateRight: number): number
+
+export declare function compareDesc(dateLeft: number, dateRight: number): number
+
 export declare function differenceInDays(aMs: number, bMs: number): number
 
 export declare function differenceInHours(aMs: number, bMs: number): number
@@ -66,12 +70,17 @@ export declare function intervalToDailyIntervals(startMs: number, endMs: number)
 
 export declare function intervalToDuration(startMs: number, endMs: number): DurationParts
 
+export declare function isAfter(date: number, dateToCompare: number): boolean
+
+export declare function isBefore(date: number, dateToCompare: number): boolean
+
+export declare function isEqual(dateLeft: number, dateRight: number): boolean
+
 export declare function max(dates: Array<number>): number
 
 export declare function min(dates: Array<number>): number
 
 export declare function parseIso(isoString: string): number
-export declare function parseISO(isoString: string): number
 
 export declare function startOfDay(timestamp: number): number
 

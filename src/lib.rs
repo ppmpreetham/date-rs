@@ -879,8 +879,96 @@ pub fn start_of_day(timestamp: f64) -> f64 {
   }
 }
 
-// compareAsc, compareDesc,
-// isEqual, isBefore, isAfter,
+#[napi]
+pub fn compare_asc(date_left: f64, date_right: f64) -> f64 {
+  // Handle NaN inputs
+  if date_left.is_nan() || date_right.is_nan() {
+    return f64::NAN;
+  }
+
+  // Handle infinity
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return f64::NAN;
+  }
+
+  // Normal comparison
+  if date_left < date_right {
+    -1.0
+  } else if date_left > date_right {
+    1.0
+  } else {
+    0.0
+  }
+}
+
+#[napi]
+pub fn compare_desc(date_left: f64, date_right: f64) -> f64 {
+  // Handle NaN inputs
+  if date_left.is_nan() || date_right.is_nan() {
+    return f64::NAN;
+  }
+
+  // Handle infinity
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return f64::NAN;
+  }
+
+  // Reverse comparison
+  if date_left > date_right {
+    -1.0
+  } else if date_left < date_right {
+    1.0
+  } else {
+    0.0
+  }
+}
+
+#[napi]
+pub fn is_equal(date_left: f64, date_right: f64) -> bool {
+  // NaN is never equal to anything, including itself
+  if date_left.is_nan() || date_right.is_nan() {
+    return false;
+  }
+
+  // Infinity checks
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return false;
+  }
+
+  // Handle floating point precision issues
+  const EPSILON: f64 = 0.001; // 1 microsecond tolerance
+  (date_left - date_right).abs() < EPSILON
+}
+
+#[napi]
+pub fn is_before(date: f64, date_to_compare: f64) -> bool {
+  // Invalid inputs
+  if date.is_nan() || date_to_compare.is_nan() {
+    return false;
+  }
+
+  // Infinity checks
+  if date.is_infinite() || date_to_compare.is_infinite() {
+    return false;
+  }
+
+  date < date_to_compare
+}
+
+#[napi]
+pub fn is_after(date: f64, date_to_compare: f64) -> bool {
+  // Invalid inputs
+  if date.is_nan() || date_to_compare.is_nan() {
+    return false;
+  }
+
+  // Infinity checks
+  if date.is_infinite() || date_to_compare.is_infinite() {
+    return false;
+  }
+
+  date > date_to_compare
+}
 
 // isValid,
 // isToday,
