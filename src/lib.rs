@@ -387,8 +387,7 @@ pub fn is_equal(date_left: f64, date_right: f64) -> bool {
   if date_left.is_infinite() || date_right.is_infinite() {
     return false;
   }
-  const EPSILON: f64 = 0.001;
-  (date_left - date_right).abs() < EPSILON
+  date_left == date_right
 }
 
 #[napi]
