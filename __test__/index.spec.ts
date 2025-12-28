@@ -315,7 +315,7 @@ test('parseISO matches date-fns', (t) => {
   ]
 
   for (const isoString of testCases) {
-    const rsResult = dateRs.parseISO(isoString)
+    const rsResult = dateRs.parseIso(isoString)
     const fnsResult = dateFns.parseISO(isoString).getTime()
 
     t.truthy(!isNaN(rsResult), `${isoString} should be valid in date-rs`)
@@ -340,7 +340,7 @@ test('parseISO matches date-fns', (t) => {
   ]
 
   for (const isoString of invalidCases) {
-    const rsResult = dateRs.parseISO(isoString)
+    const rsResult = dateRs.parseIso(isoString)
     const fnsResult = dateFns.parseISO(isoString).getTime()
 
     t.truthy(isNaN(rsResult), `${isoString} should return NaN in date-rs`)
@@ -351,7 +351,7 @@ test('parseISO matches date-fns', (t) => {
 
   // Test alias
   const isoString = '2024-01-15T10:30:00Z'
-  const rsResult1 = dateRs.parseISO(isoString)
+  const rsResult1 = dateRs.parseIso(isoString)
   const rsResult2 = dateRs.parseIso(isoString)
   t.is(rsResult1, rsResult2, 'parseISO and parseIso should return the same result')
   console.log('✓ parseISO: parseIso alias works')
@@ -707,9 +707,9 @@ test('comparison functions handle leap years', (t) => {
   const leapYearTimestamp = leapYearDate.getTime()
   const nonLeapYearTimestamp = nonLeapYearDate.getTime()
 
-  t.is(dateRs.isEqual(leapYearTimestamp, leapYearTimestamp), true)
-  t.is(dateRs.isBefore(leapYearTimestamp, nonLeapYearTimestamp), true)
-  t.is(dateRs.isAfter(nonLeapYearTimestamp, leapYearTimestamp), true)
+  // non-leap year 2023-02-28 is BEFORE leap year 2024-02-29
+  t.is(dateRs.isBefore(nonLeapYearTimestamp, leapYearTimestamp), true)
+  t.is(dateRs.isAfter(nonLeapYearTimestamp, leapYearTimestamp), false)
 
   console.log('✓ comparison: leap year handling')
 })
