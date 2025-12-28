@@ -75,7 +75,7 @@ pub fn add_months(date_ms: f64, amount: f64) -> f64 {
   };
 
   let days = days_in_month(month, year);
-  let clamped_day = day.min(days as u8);
+  let clamped_day = day.min(days);
 
   let Ok(new_date) = tmp.replace_day(clamped_day) else {
     return f64::NAN;
@@ -440,7 +440,7 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
 
   let mut reversed = start > end;
   let end_time = if reversed { start } else { end };
-  let mut date = if reversed { end } else { start };
+  let date = if reversed { end } else { start };
 
   let offset = date.offset();
 
@@ -590,12 +590,11 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
 
   let mut reversed = start > end;
   let end_time = if reversed { start } else { end };
-  let mut date = if reversed { end } else { start };
+  let date = if reversed { end } else { start };
 
   let offset = date.offset();
 
   let mut date = date.date();
-  date = date; // Y-M-D only
 
   let mut step = step;
   if step < 0 {
@@ -614,7 +613,7 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
 
     res.push(to_ms(dt));
 
-    date = date + time::Duration::days(step);
+    date += time::Duration::days(step);
   }
 
   if reversed {
