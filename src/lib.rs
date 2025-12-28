@@ -1,8 +1,8 @@
 #![deny(clippy::all)]
 
-use napi::JsObject as Object;
+use napi::bindgen_prelude::Object;
 use napi_derive::napi;
-use time::util::{days_in_year, days_in_year_month};
+use time::util::days_in_month;
 use time::{Duration, Month, OffsetDateTime, Weekday};
 
 // addMilliseconds, addSeconds, addMinutes, addHours,
@@ -51,7 +51,6 @@ pub fn add_months(date_ms: f64, amount: f64) -> f64 {
   let month0 = date.month() as i32 - 1;
   let day = date.day();
 
-  // truncate toward zero — same as date-fns
   let amount_i32 = amount.trunc() as i32;
 
   let total = month0 + amount_i32;
@@ -63,7 +62,7 @@ pub fn add_months(date_ms: f64, amount: f64) -> f64 {
     return f64::NAN;
   };
 
-  let days = days_in_year_month(year, month);
+  let days = days_in_month(month, year);
   let clamped_day = day.min(days as u8);
 
   let Ok(new_date) = date
@@ -360,22 +359,25 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step: Option<i64>) -> Ve
 
 #[napi]
 pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>) -> Vec<f64> {
-  let week_starts_on = options
+  use napi::bindgen_prelude::JsObjectValue;
+
+  let week_starts_on: u8 = options
     .as_ref()
     .and_then(|o| o.get_named_property::<u8>("weekStartsOn").ok())
     .unwrap_or(0);
-  let step = options
+
+  let step: i64 = options
     .as_ref()
     .and_then(|o| o.get_named_property::<i64>("step").ok())
     .unwrap_or(1);
 
-  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
-    return vec![];
-  };
-
   if step == 0 {
     return vec![];
   }
+
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+    return vec![];
+  };
 
   let reverse = step < 0 || start > end;
   let abs_step = step.abs();
@@ -384,7 +386,16 @@ pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>
     std::mem::swap(&mut start, &mut end);
   }
 
-  let target_weekday = Weekday::try_from(week_starts_on).unwrap_or(Weekday::Sunday);
+  let target_weekday = match week_starts_on {
+    0 => Weekday::Sunday,
+    1 => Weekday::Monday,
+    2 => Weekday::Tuesday,
+    3 => Weekday::Wednesday,
+    4 => Weekday::Thursday,
+    5 => Weekday::Friday,
+    6 => Weekday::Saturday,
+    _ => Weekday::Sunday,
+  };
   while start.weekday() != target_weekday {
     start -= Duration::days(1);
   }
@@ -400,8 +411,10 @@ pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>
   if reverse {
     res.reverse();
   }
+
   res
 }
+
 #[napi]
 pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) -> Vec<f64> {
   let step = step_opt.unwrap_or(1);
@@ -409,7 +422,7 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
     return vec![];
   }
 
-  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+  let (Some(start), Some(end)) = (from_ms(start_ms), from_ms(end_ms)) else {
     return vec![];
   };
 
@@ -431,9 +444,8 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
 
   while date <= end_time {
     res.push(to_ms(date));
-    date = date + Duration::days(0);
     let next_month = date.month() as i32 - 1 + step;
-    let mut year = date.year() + next_month.div_euclid(12);
+    let year = date.year() + next_month.div_euclid(12);
     let month = Month::try_from((next_month.rem_euclid(12) + 1) as u8).unwrap();
     date = date
       .replace_year(year)
@@ -473,14 +485,17 @@ pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -
 
   loop {
     let month = Month::try_from(((quarter - 1) * 3 + 1) as u8).unwrap();
-    let Ok(dt) = start
-      .replace_year(year)
-      .and_then(|d| d.replace_month(month))
-      .and_then(|d| d.replace_day(1))
-      .and_then(|d| d.replace_time(time::Time::MIDNIGHT))
-    else {
+    let Ok(d) = start.replace_year(year) else {
       break;
     };
+    let Ok(d) = d.replace_month(month) else {
+      break;
+    };
+    let Ok(d) = d.replace_day(1) else {
+      break;
+    };
+
+    let dt = d.replace_time(time::Time::MIDNIGHT);
 
     if dt > end {
       break;
@@ -503,16 +518,14 @@ pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -
 #[napi]
 pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> Vec<f64> {
   let step = step.unwrap_or(1);
-  let (Some(start), Some(end)) = (from_ms(start_ms), from_ms(end_ms)) else {
+  let (Some(mut start), Some(mut end)) = (from_ms(start_ms), from_ms(end_ms)) else {
     return vec![];
   };
 
   let reverse = step < 0 || start > end;
   let abs_step = step.abs() as i32;
   if reverse {
-    let temp = start;
-    start = end;
-    end = temp;
+    std::mem::swap(&mut start, &mut end);
   }
 
   let mut year = start.year();
@@ -520,14 +533,18 @@ pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> V
   let mut res = vec![];
 
   loop {
-    let Ok(dt) = start
-      .replace_year(year)
-      .and_then(|d| d.replace_month(Month::January))
-      .and_then(|d| d.replace_day(1))
-      .and_then(|d| d.replace_time(time::Time::MIDNIGHT))
-    else {
+    let Ok(d) = start.replace_year(year) else {
       break;
     };
+    let Ok(d) = d.replace_month(Month::January) else {
+      break;
+    };
+    let Ok(d) = d.replace_day(1) else {
+      break;
+    };
+
+    let dt = d.replace_time(time::Time::MIDNIGHT);
+
     if dt > end {
       break;
     }
@@ -545,9 +562,10 @@ pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> V
 pub fn each_weekend_of_interval(start_ms: f64, end_ms: f64) -> Vec<f64> {
   each_day_of_interval(start_ms, end_ms, None)
     .into_iter()
-    .filter(|&d| {
-      from_ms(d).unwrap().weekday() == Weekday::Saturday
-        || from_ms(d).unwrap().weekday() == Weekday::Sunday
+    .filter(|&ms| {
+      from_ms(ms).map_or(false, |dt| {
+        dt.weekday() == Weekday::Saturday || dt.weekday() == Weekday::Sunday
+      })
     })
     .collect()
 }
