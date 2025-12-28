@@ -70,6 +70,11 @@ export declare function max(dates: Array<number>): number
 
 export declare function min(dates: Array<number>): number
 
+export declare function parseIso(isoString: string): number
+export declare function parseISO(isoString: string): number
+
+export declare function startOfDay(timestamp: number): number
+
 export declare function subDays(dateMs: number, amount: number): number
 
 export declare function subHours(dateMs: number, amount: number): number

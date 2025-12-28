@@ -2,6 +2,7 @@
 
 use napi::bindgen_prelude::Object;
 use napi_derive::napi;
+use time::format_description::well_known::Iso8601;
 use time::util::days_in_month;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
@@ -809,6 +810,75 @@ pub fn interval_to_daily_intervals(start_ms: f64, end_ms: f64) -> Vec<Interval> 
   res
 }
 
+#[napi]
+pub fn parse_iso(iso_string: String) -> f64 {
+  let mut string_to_parse = iso_string;
+  // Handle date-only strings (YYYY-MM-DD)
+  if !string_to_parse.contains('T') && string_to_parse.len() == 10 {
+    string_to_parse = format!("{}T00:00:00Z", string_to_parse);
+  }
+  // Add Z to datetime strings without timezone indicator
+  else if string_to_parse.contains('T') && !has_timezone(&string_to_parse) {
+    string_to_parse.push('Z');
+  }
+
+  match OffsetDateTime::parse(&string_to_parse, &Iso8601::DEFAULT) {
+    Ok(dt) => {
+      let secs = dt.unix_timestamp() as f64;
+      let millis = dt.millisecond() as f64;
+      secs * 1000.0 + millis
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+fn has_timezone(s: &str) -> bool {
+  let after_t = match s.find('T') {
+    Some(pos) => &s[pos..],
+    None => return false,
+  };
+
+  if after_t.ends_with('Z') {
+    return true;
+  }
+
+  // Check for +/- timezone offset (must be followed by digit)
+  for (i, c) in after_t.chars().enumerate() {
+    if (c == '+' || c == '-') && i > 0 {
+      // Check if next char is a digit
+      if let Some(next) = after_t.chars().nth(i + 1) {
+        if next.is_numeric() {
+          return true;
+        }
+      }
+    }
+  }
+
+  false
+}
+
+#[napi]
+pub fn start_of_day(timestamp: f64) -> f64 {
+  if !timestamp.is_finite() {
+    return f64::NAN;
+  }
+
+  // Convert milliseconds to seconds and nanoseconds
+  let secs = (timestamp / 1000.0).floor() as i64;
+  let nanos = ((timestamp % 1000.0) * 1_000_000.0) as i32;
+
+  match OffsetDateTime::from_unix_timestamp_nanos(secs as i128 * 1_000_000_000 + nanos as i128) {
+    Ok(dt) => {
+      // Get start of day in UTC (00:00:00.000)
+      let start = dt.replace_time(time::Time::MIDNIGHT);
+      let result_secs = start.unix_timestamp() as f64;
+      let result_millis = start.millisecond() as f64;
+      result_secs * 1000.0 + result_millis
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
 // compareAsc, compareDesc,
 // isEqual, isBefore, isAfter,
 
@@ -834,7 +904,6 @@ pub fn interval_to_daily_intervals(start_ms: f64, end_ms: f64) -> Vec<Interval> 
 // formatDistanceToNow,
 
 // parse,
-// parseISO,
 // utcToZonedTime,
 // zonedTimeToUtc,…
 
