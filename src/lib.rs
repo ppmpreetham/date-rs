@@ -3,7 +3,7 @@
 use napi::bindgen_prelude::Object;
 use napi_derive::napi;
 use time::util::days_in_month;
-use time::{Duration, Month, OffsetDateTime, UtcOffset, Weekday};
+use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
 // addMilliseconds, addSeconds, addMinutes, addHours,
 // addDays, addWeeks, addMonths, addQuarters, addYears
@@ -370,34 +370,6 @@ pub fn max(dates: Vec<f64>) -> f64 {
 }
 
 #[napi]
-pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step: Option<i64>) -> Vec<f64> {
-  let step = step.unwrap_or(1);
-  let (Some(mut start), Some(mut end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
-    return vec![];
-  };
-
-  let reverse = step < 0 || start > end;
-  let abs_step = step.abs();
-  if reverse {
-    std::mem::swap(&mut start, &mut end);
-  }
-
-  let mut res = vec![];
-  start = start.replace_time(time::Time::MIDNIGHT);
-  end = end.replace_time(time::Time::MIDNIGHT);
-
-  while start <= end {
-    res.push(to_ms(start));
-    start += Duration::days(abs_step);
-  }
-
-  if reverse {
-    res.reverse();
-  }
-  res
-}
-
-#[napi]
 pub fn each_week_of_interval(start_ms: f64, end_ms: f64, options: Option<Object>) -> Vec<f64> {
   use napi::bindgen_prelude::JsObjectValue;
 
@@ -470,28 +442,32 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
   let end_time = if reversed { start } else { end };
   let mut date = if reversed { end } else { start };
 
+  let offset = date.offset();
+
+  let mut year = date.year();
+  let mut month = date.month();
+
+  let mut step = step;
   if step < 0 {
+    step = -step;
     reversed = !reversed;
   }
-  let step = step.abs();
-
-  date = date
-    .replace_time(time::Time::MIDNIGHT)
-    .replace_day(1)
-    .unwrap();
 
   let mut res = vec![];
 
-  while date <= end_time {
-    res.push(to_ms(date));
-    let next_month = date.month() as i32 - 1 + step;
-    let year = date.year() + next_month.div_euclid(12);
-    let month = Month::try_from((next_month.rem_euclid(12) + 1) as u8).unwrap();
-    date = date
-      .replace_year(year)
-      .and_then(|d| d.replace_month(month))
-      .and_then(|d| d.replace_day(1))
-      .unwrap();
+  loop {
+    let d = Date::from_calendar_date(year, month, 1).unwrap();
+    let dt = d.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+
+    if dt > end_time {
+      break;
+    }
+
+    res.push(to_ms(dt));
+
+    let idx = month as i32 - 1 + step;
+    year += idx.div_euclid(12);
+    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();
   }
 
   if reversed {
@@ -556,45 +532,95 @@ pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -
 }
 
 #[napi]
-pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step: Option<i32>) -> Vec<f64> {
-  let step = step.unwrap_or(1);
-  let (Some(mut start), Some(mut end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+pub fn each_year_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>) -> Vec<f64> {
+  let step = step_opt.unwrap_or(1);
+  if step == 0 {
+    return vec![];
+  }
+
+  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
     return vec![];
   };
 
-  let reverse = step < 0 || start > end;
-  let abs_step = step.abs();
-  if reverse {
-    std::mem::swap(&mut start, &mut end);
-  }
+  let mut reversed = start > end;
+  let end_time = if reversed { start } else { end };
+  let date = if reversed { end } else { start };
 
-  let mut year = start.year();
+  let offset = date.offset();
+  let mut year = date.year();
+
+  let mut step = step;
+  if step < 0 {
+    step = -step;
+    reversed = !reversed;
+  }
 
   let mut res = vec![];
 
   loop {
-    let Ok(d) = start.replace_year(year) else {
-      break;
-    };
-    let Ok(d) = d.replace_month(Month::January) else {
-      break;
-    };
-    let Ok(d) = d.replace_day(1) else {
-      break;
-    };
+    let d = Date::from_calendar_date(year, Month::January, 1).unwrap();
+    let dt = d.with_time(time::Time::MIDNIGHT).assume_offset(offset);
 
-    let dt = d.replace_time(time::Time::MIDNIGHT);
-
-    if dt > end {
+    if dt > end_time {
       break;
     }
+
     res.push(to_ms(dt));
-    year += abs_step;
+
+    year += step;
   }
 
-  if reverse {
+  if reversed {
     res.reverse();
   }
+
+  res
+}
+
+#[napi]
+pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -> Vec<f64> {
+  let step = step_opt.unwrap_or(1);
+  if step == 0 {
+    return vec![];
+  }
+
+  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+    return vec![];
+  };
+
+  let mut reversed = start > end;
+  let end_time = if reversed { start } else { end };
+  let mut date = if reversed { end } else { start };
+
+  let offset = date.offset();
+
+  let mut date = date.date();
+  date = date; // Y-M-D only
+
+  let mut step = step;
+  if step < 0 {
+    step = -step;
+    reversed = !reversed;
+  }
+
+  let mut res = vec![];
+
+  loop {
+    let dt = date.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+
+    if dt > end_time {
+      break;
+    }
+
+    res.push(to_ms(dt));
+
+    date = date + time::Duration::days(step);
+  }
+
+  if reversed {
+    res.reverse();
+  }
+
   res
 }
 

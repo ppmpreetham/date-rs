@@ -45,7 +45,7 @@ export interface DurationParts {
   seconds?: number
 }
 
-export declare function eachDayOfInterval(startMs: number, endMs: number, step?: number | undefined | null): Array<number>
+export declare function eachDayOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
 export declare function eachMonthOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
@@ -55,7 +55,7 @@ export declare function eachWeekendOfInterval(startMs: number, endMs: number): A
 
 export declare function eachWeekOfInterval(startMs: number, endMs: number, options?: object | undefined | null): Array<number>
 
-export declare function eachYearOfInterval(startMs: number, endMs: number, step?: number | undefined | null): Array<number>
+export declare function eachYearOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
 export interface Interval {
   start: number
