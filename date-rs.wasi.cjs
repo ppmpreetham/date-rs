@@ -108,6 +108,8 @@ const { instance: __napiInstance, module: __wasiModule, napiModule: __napiModule
   },
 })
 module.exports = __napiModule.exports
+module.exports.add = __napiModule.exports.add
+module.exports.addBusinessDays = __napiModule.exports.addBusinessDays
 module.exports.addDays = __napiModule.exports.addDays
 module.exports.addHours = __napiModule.exports.addHours
 module.exports.addMilliseconds = __napiModule.exports.addMilliseconds
@@ -117,6 +119,14 @@ module.exports.addQuarters = __napiModule.exports.addQuarters
 module.exports.addSeconds = __napiModule.exports.addSeconds
 module.exports.addWeeks = __napiModule.exports.addWeeks
 module.exports.addYears = __napiModule.exports.addYears
+module.exports.areIntervalsOverlapping = __napiModule.exports.areIntervalsOverlapping
+module.exports.clamp = __napiModule.exports.clamp
+module.exports.closestIndexTo = __napiModule.exports.closestIndexTo
+module.exports.closestTo = __napiModule.exports.closestTo
+module.exports.compareAsc = __napiModule.exports.compareAsc
+module.exports.compareDesc = __napiModule.exports.compareDesc
+module.exports.differenceInBusinessDays = __napiModule.exports.differenceInBusinessDays
+module.exports.differenceInCalendarDays = __napiModule.exports.differenceInCalendarDays
 module.exports.differenceInDays = __napiModule.exports.differenceInDays
 module.exports.differenceInHours = __napiModule.exports.differenceInHours
 module.exports.differenceInMilliseconds = __napiModule.exports.differenceInMilliseconds
@@ -134,6 +144,13 @@ module.exports.eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
 module.exports.eachYearOfInterval = __napiModule.exports.eachYearOfInterval
 module.exports.intervalToDailyIntervals = __napiModule.exports.intervalToDailyIntervals
 module.exports.intervalToDuration = __napiModule.exports.intervalToDuration
+module.exports.isAfter = __napiModule.exports.isAfter
+module.exports.isBefore = __napiModule.exports.isBefore
+module.exports.isEqual = __napiModule.exports.isEqual
+module.exports.isSameDay = __napiModule.exports.isSameDay
+module.exports.isSaturday = __napiModule.exports.isSaturday
+module.exports.isSunday = __napiModule.exports.isSunday
+module.exports.isWeekend = __napiModule.exports.isWeekend
 module.exports.max = __napiModule.exports.max
 module.exports.min = __napiModule.exports.min
 module.exports.parseIso = __napiModule.exports.parseIso

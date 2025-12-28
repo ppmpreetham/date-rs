@@ -56,6 +56,8 @@ const {
   },
 })
 export default __napiModule.exports
+export const add = __napiModule.exports.add
+export const addBusinessDays = __napiModule.exports.addBusinessDays
 export const addDays = __napiModule.exports.addDays
 export const addHours = __napiModule.exports.addHours
 export const addMilliseconds = __napiModule.exports.addMilliseconds
@@ -65,6 +67,14 @@ export const addQuarters = __napiModule.exports.addQuarters
 export const addSeconds = __napiModule.exports.addSeconds
 export const addWeeks = __napiModule.exports.addWeeks
 export const addYears = __napiModule.exports.addYears
+export const areIntervalsOverlapping = __napiModule.exports.areIntervalsOverlapping
+export const clamp = __napiModule.exports.clamp
+export const closestIndexTo = __napiModule.exports.closestIndexTo
+export const closestTo = __napiModule.exports.closestTo
+export const compareAsc = __napiModule.exports.compareAsc
+export const compareDesc = __napiModule.exports.compareDesc
+export const differenceInBusinessDays = __napiModule.exports.differenceInBusinessDays
+export const differenceInCalendarDays = __napiModule.exports.differenceInCalendarDays
 export const differenceInDays = __napiModule.exports.differenceInDays
 export const differenceInHours = __napiModule.exports.differenceInHours
 export const differenceInMilliseconds = __napiModule.exports.differenceInMilliseconds
@@ -82,6 +92,13 @@ export const eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
 export const eachYearOfInterval = __napiModule.exports.eachYearOfInterval
 export const intervalToDailyIntervals = __napiModule.exports.intervalToDailyIntervals
 export const intervalToDuration = __napiModule.exports.intervalToDuration
+export const isAfter = __napiModule.exports.isAfter
+export const isBefore = __napiModule.exports.isBefore
+export const isEqual = __napiModule.exports.isEqual
+export const isSameDay = __napiModule.exports.isSameDay
+export const isSaturday = __napiModule.exports.isSaturday
+export const isSunday = __napiModule.exports.isSunday
+export const isWeekend = __napiModule.exports.isWeekend
 export const max = __napiModule.exports.max
 export const min = __napiModule.exports.min
 export const parseIso = __napiModule.exports.parseIso
