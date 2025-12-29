@@ -604,6 +604,7 @@ module.exports.max = nativeBinding.max
 module.exports.min = nativeBinding.min
 module.exports.parseIso = nativeBinding.parseIso
 module.exports.startOfDay = nativeBinding.startOfDay
+module.exports.startOfMonth = nativeBinding.startOfMonth
 module.exports.subDays = nativeBinding.subDays
 module.exports.subHours = nativeBinding.subHours
 module.exports.subMilliseconds = nativeBinding.subMilliseconds

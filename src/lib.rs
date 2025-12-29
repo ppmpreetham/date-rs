@@ -854,7 +854,8 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
 
     let idx = month as i32 - 1 + step;
     year += idx.div_euclid(12);
-    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();}
+    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();
+  }
   if reversed {
     res.reverse();
   }
@@ -1011,6 +1012,26 @@ pub fn start_of_day(timestamp: f64) -> f64 {
       let result_secs = start.unix_timestamp() as f64;
       let result_millis = start.millisecond() as f64;
       result_secs * 1000.0 + result_millis
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn start_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let Some(dt) = from_ms_local(date_ms) else {
+    return f64::NAN;
+  };
+
+  // Set to first day of month at midnight
+  match dt.replace_day(1) {
+    Ok(start) => {
+      let start_midnight = start.replace_time(time::Time::MIDNIGHT);
+      to_ms(start_midnight)
     }
     Err(_) => f64::NAN,
   }

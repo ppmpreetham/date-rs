@@ -103,6 +103,7 @@ export const max = __napiModule.exports.max
 export const min = __napiModule.exports.min
 export const parseIso = __napiModule.exports.parseIso
 export const startOfDay = __napiModule.exports.startOfDay
+export const startOfMonth = __napiModule.exports.startOfMonth
 export const subDays = __napiModule.exports.subDays
 export const subHours = __napiModule.exports.subHours
 export const subMilliseconds = __napiModule.exports.subMilliseconds

@@ -155,6 +155,7 @@ module.exports.max = __napiModule.exports.max
 module.exports.min = __napiModule.exports.min
 module.exports.parseIso = __napiModule.exports.parseIso
 module.exports.startOfDay = __napiModule.exports.startOfDay
+module.exports.startOfMonth = __napiModule.exports.startOfMonth
 module.exports.subDays = __napiModule.exports.subDays
 module.exports.subHours = __napiModule.exports.subHours
 module.exports.subMilliseconds = __napiModule.exports.subMilliseconds

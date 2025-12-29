@@ -118,6 +118,8 @@ export declare function parseIso(isoString: string): number
 
 export declare function startOfDay(timestamp: number): number
 
+export declare function startOfMonth(dateMs: number): number
+
 export declare function subDays(dateMs: number, amount: number): number
 
 export declare function subHours(dateMs: number, amount: number): number
