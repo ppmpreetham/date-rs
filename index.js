@@ -591,6 +591,7 @@ module.exports.eachQuarterOfInterval = nativeBinding.eachQuarterOfInterval
 module.exports.eachWeekendOfInterval = nativeBinding.eachWeekendOfInterval
 module.exports.eachWeekOfInterval = nativeBinding.eachWeekOfInterval
 module.exports.eachYearOfInterval = nativeBinding.eachYearOfInterval
+module.exports.endOfMonth = nativeBinding.endOfMonth
 module.exports.intervalToDailyIntervals = nativeBinding.intervalToDailyIntervals
 module.exports.intervalToDuration = nativeBinding.intervalToDuration
 module.exports.isAfter = nativeBinding.isAfter

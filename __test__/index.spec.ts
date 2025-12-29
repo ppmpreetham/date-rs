@@ -931,3 +931,60 @@ test('start_of_month matches dateFns', (t) => {
 
   console.log('✓ startOfMonth passes')
 })
+
+test('end_of_month matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  // Days expected for 2024: Jan(31), Feb(29), Mar(31), Apr(30), etc.
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: 5th of the month at 10:00 UTC
+    const input = new Date(Date.UTC(year, month, 5, 10, 0, 0))
+    const result = dateRs.endOfMonth(input.getTime())
+    const resDate = new Date(result)
+
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), daysInMonth[month], `Month ${month} should end on day ${daysInMonth[month]}`)
+
+    // Critical Check: Time must be exactly 23:59:59.999
+    t.is(resDate.getUTCHours(), 23, 'Hours should be 23')
+    t.is(resDate.getUTCMinutes(), 59, 'Minutes should be 59')
+    t.is(resDate.getUTCSeconds(), 59, 'Seconds should be 59')
+    t.is(resDate.getUTCMilliseconds(), 999, 'Milliseconds should be 999')
+  }
+
+  // 2. Non-Leap Year Check (Feb 2023)
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 15)) // Feb 2023
+  const nonLeapRes = new Date(dateRs.endOfMonth(nonLeapInput.getTime()))
+
+  t.is(nonLeapRes.getUTCFullYear(), 2023)
+  t.is(nonLeapRes.getUTCMonth(), 1)
+  t.is(nonLeapRes.getUTCDate(), 28, 'Feb 2023 should end on the 28th')
+
+  // 3. Century Leap Year Edge Cases
+  // 1900 was NOT a leap year (divisible by 100 but not 400)
+  const year1900 = new Date(Date.UTC(1900, 1, 10))
+  const res1900 = new Date(dateRs.endOfMonth(year1900.getTime()))
+  t.is(res1900.getUTCDate(), 28, 'Feb 1900 should be 28 days (not a leap year)')
+
+  // 2000 WAS a leap year (divisible by 400)
+  const year2000 = new Date(Date.UTC(2000, 1, 10))
+  const res2000 = new Date(dateRs.endOfMonth(year2000.getTime()))
+  t.is(res2000.getUTCDate(), 29, 'Feb 2000 should be 29 days (leap year)')
+
+  // 4. Time Reset Logic
+  // Case: Input is already the last day, but early morning
+  const lastDayMorning = new Date(Date.UTC(2024, 0, 31, 8, 30, 0))
+  const resMorning = new Date(dateRs.endOfMonth(lastDayMorning.getTime()))
+  t.is(resMorning.getUTCHours(), 23, 'Should forward time to end of day')
+  t.is(resMorning.getUTCMilliseconds(), 999)
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.endOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.endOfMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.endOfMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ endOfMonth passes')
+})

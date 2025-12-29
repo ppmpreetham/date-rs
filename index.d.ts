@@ -87,6 +87,8 @@ export declare function eachWeekOfInterval(startMs: number, endMs: number, optio
 
 export declare function eachYearOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
+export declare function endOfMonth(dateMs: number): number
+
 export interface Interval {
   start: number
   end: number

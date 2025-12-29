@@ -3,8 +3,8 @@
 use napi::bindgen_prelude::{Either, JsObjectValue, Object, Undefined};
 use napi_derive::napi;
 use time::format_description::well_known::Iso8601;
-use time::Time;
 use time::util::days_in_month;
+use time::Time;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
 #[inline(always)]
@@ -1035,6 +1035,31 @@ pub fn start_of_month(date_ms: f64) -> f64 {
       let start_midnight = start_of_month_date.replace_time(Time::MIDNIGHT);
 
       (start_midnight.unix_timestamp_nanos() / 1_000_000) as f64
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn end_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  let days = time::util::days_in_month(month, year);
+
+  match dt.replace_day(days) {
+    Ok(last_day) => {
+      let end_time = time::Time::from_hms_milli(23, 59, 59, 999).unwrap();
+      let end = last_day.replace_time(end_time);
+      (end.unix_timestamp_nanos() / 1_000_000) as f64
     }
     Err(_) => f64::NAN,
   }
