@@ -2,6 +2,7 @@
 
 use napi::bindgen_prelude::{Either, JsObjectValue, Object, Undefined};
 use napi_derive::napi;
+use time::format_description::well_known::Iso8601;
 use time::util::days_in_month;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
@@ -139,6 +140,7 @@ pub fn add(date_ms: f64, duration: DurationInput) -> f64 {
 
   date_after_days + ms_total
 }
+
 #[napi]
 pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
   if !date_ms.is_finite() || amount.is_nan() {
@@ -294,6 +296,7 @@ pub fn difference_in_calendar_days(later_ms: f64, earlier_ms: f64) -> f64 {
 
   ((later_ts - earlier_ts) / 86_400_000.0).round()
 }
+
 #[napi]
 pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
   if !later_ms.is_finite() || !earlier_ms.is_finite() {
@@ -377,41 +380,69 @@ pub fn difference_in_years(a_ms: f64, b_ms: f64) -> i64 {
 }
 
 #[napi]
-pub fn is_equal(date_left_ms: f64, date_right_ms: f64) -> bool {
-  date_left_ms == date_right_ms
+pub fn is_equal(date_left: f64, date_right: f64) -> bool {
+  if date_left.is_nan() || date_right.is_nan() {
+    return false;
+  }
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return false;
+  }
+  date_left == date_right
 }
 
 #[napi]
-pub fn is_after(date_ms: f64, compare_ms: f64) -> bool {
-  date_ms > compare_ms
+pub fn is_after(date: f64, date_to_compare: f64) -> bool {
+  if date.is_nan() || date_to_compare.is_nan() {
+    return false;
+  }
+  if date.is_infinite() || date_to_compare.is_infinite() {
+    return false;
+  }
+  date > date_to_compare
 }
 
 #[napi]
-pub fn is_before(date_ms: f64, compare_ms: f64) -> bool {
-  date_ms < compare_ms
+pub fn is_before(date: f64, date_to_compare: f64) -> bool {
+  if date.is_nan() || date_to_compare.is_nan() {
+    return false;
+  }
+  if date.is_infinite() || date_to_compare.is_infinite() {
+    return false;
+  }
+  date < date_to_compare
 }
 
 #[napi]
-pub fn compare_asc(date_left_ms: f64, date_right_ms: f64) -> f64 {
-  let diff = date_left_ms - date_right_ms;
-  if diff < 0.0 {
+pub fn compare_asc(date_left: f64, date_right: f64) -> f64 {
+  if date_left.is_nan() || date_right.is_nan() {
+    return f64::NAN;
+  }
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return f64::NAN;
+  }
+  if date_left < date_right {
     -1.0
-  } else if diff > 0.0 {
+  } else if date_left > date_right {
     1.0
   } else {
-    diff
+    0.0
   }
 }
 
 #[napi]
-pub fn compare_desc(date_left_ms: f64, date_right_ms: f64) -> f64 {
-  let diff = date_left_ms - date_right_ms;
-  if diff > 0.0 {
+pub fn compare_desc(date_left: f64, date_right: f64) -> f64 {
+  if date_left.is_nan() || date_right.is_nan() {
+    return f64::NAN;
+  }
+  if date_left.is_infinite() || date_right.is_infinite() {
+    return f64::NAN;
+  }
+  if date_left > date_right {
     -1.0
-  } else if diff < 0.0 {
+  } else if date_left < date_right {
     1.0
   } else {
-    diff
+    0.0
   }
 }
 
@@ -823,8 +854,7 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
 
     let idx = month as i32 - 1 + step;
     year += idx.div_euclid(12);
-    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();
-  }
+    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();}
   if reversed {
     res.reverse();
   }
@@ -915,4 +945,73 @@ pub fn each_quarter_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32
     res.reverse();
   }
   res
+}
+
+#[napi]
+pub fn parse_iso(iso_string: String) -> f64 {
+  let mut string_to_parse = iso_string;
+  // Handle date-only strings (YYYY-MM-DD)
+  if !string_to_parse.contains('T') && string_to_parse.len() == 10 {
+    string_to_parse = format!("{}T00:00:00Z", string_to_parse);
+  }
+  // Add Z to datetime strings without timezone indicator
+  else if string_to_parse.contains('T') && !has_timezone(&string_to_parse) {
+    string_to_parse.push('Z');
+  }
+
+  match OffsetDateTime::parse(&string_to_parse, &Iso8601::DEFAULT) {
+    Ok(dt) => {
+      let secs = dt.unix_timestamp() as f64;
+      let millis = dt.millisecond() as f64;
+      secs * 1000.0 + millis
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+fn has_timezone(s: &str) -> bool {
+  let after_t = match s.find('T') {
+    Some(pos) => &s[pos..],
+    None => return false,
+  };
+
+  if after_t.ends_with('Z') {
+    return true;
+  }
+
+  // Check for +/- timezone offset (must be followed by digit)
+  for (i, c) in after_t.chars().enumerate() {
+    if (c == '+' || c == '-') && i > 0 {
+      // Check if next char is a digit
+      if let Some(next) = after_t.chars().nth(i + 1) {
+        if next.is_numeric() {
+          return true;
+        }
+      }
+    }
+  }
+
+  false
+}
+
+#[napi]
+pub fn start_of_day(timestamp: f64) -> f64 {
+  if !timestamp.is_finite() {
+    return f64::NAN;
+  }
+
+  // Convert milliseconds to seconds and nanoseconds
+  let secs = (timestamp / 1000.0).floor() as i64;
+  let nanos = ((timestamp % 1000.0) * 1_000_000.0) as i32;
+
+  match OffsetDateTime::from_unix_timestamp_nanos(secs as i128 * 1_000_000_000 + nanos as i128) {
+    Ok(dt) => {
+      // Get start of day in UTC (00:00:00.000)
+      let start = dt.replace_time(time::Time::MIDNIGHT);
+      let result_secs = start.unix_timestamp() as f64;
+      let result_millis = start.millisecond() as f64;
+      result_secs * 1000.0 + result_millis
+    }
+    Err(_) => f64::NAN,
+  }
 }

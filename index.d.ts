@@ -30,9 +30,9 @@ export declare function closestIndexTo(targetMs: number, dates: Array<number>): 
 
 export declare function closestTo(targetMs: number, dates: Array<number>): number | undefined
 
-export declare function compareAsc(dateLeftMs: number, dateRightMs: number): number
+export declare function compareAsc(dateLeft: number, dateRight: number): number
 
-export declare function compareDesc(dateLeftMs: number, dateRightMs: number): number
+export declare function compareDesc(dateLeft: number, dateRight: number): number
 
 export declare function differenceInBusinessDays(laterMs: number, earlierMs: number): number
 
@@ -96,11 +96,11 @@ export declare function intervalToDailyIntervals(startMs: number, endMs: number)
 
 export declare function intervalToDuration(startMs: number, endMs: number): DurationParts
 
-export declare function isAfter(dateMs: number, compareMs: number): boolean
+export declare function isAfter(date: number, dateToCompare: number): boolean
 
-export declare function isBefore(dateMs: number, compareMs: number): boolean
+export declare function isBefore(date: number, dateToCompare: number): boolean
 
-export declare function isEqual(dateLeftMs: number, dateRightMs: number): boolean
+export declare function isEqual(dateLeft: number, dateRight: number): boolean
 
 export declare function isSameDay(aMs: number, bMs: number): boolean
 
@@ -113,6 +113,10 @@ export declare function isWeekend(dateMs: number): boolean
 export declare function max(dates: Array<number>): number
 
 export declare function min(dates: Array<number>): number
+
+export declare function parseIso(isoString: string): number
+
+export declare function startOfDay(timestamp: number): number
 
 export declare function subDays(dateMs: number, amount: number): number
 
