@@ -112,6 +112,8 @@ export declare function isSunday(dateMs: number): boolean
 
 export declare function isWeekend(dateMs: number): boolean
 
+export declare function lastDayOfMonth(dateMs: number): number
+
 export declare function max(dates: Array<number>): number
 
 export declare function min(dates: Array<number>): number

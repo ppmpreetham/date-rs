@@ -100,6 +100,7 @@ export const isSameDay = __napiModule.exports.isSameDay
 export const isSaturday = __napiModule.exports.isSaturday
 export const isSunday = __napiModule.exports.isSunday
 export const isWeekend = __napiModule.exports.isWeekend
+export const lastDayOfMonth = __napiModule.exports.lastDayOfMonth
 export const max = __napiModule.exports.max
 export const min = __napiModule.exports.min
 export const parseIso = __napiModule.exports.parseIso

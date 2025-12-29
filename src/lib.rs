@@ -1064,3 +1064,24 @@ pub fn end_of_month(date_ms: f64) -> f64 {
     Err(_) => f64::NAN,
   }
 }
+
+#[napi]
+pub fn last_day_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  let days = time::util::days_in_month(month, year);
+
+  match dt.replace_day(days) {
+    Ok(last_day) => (last_day.unix_timestamp_nanos() / 1_000_000) as f64,
+    Err(_) => f64::NAN,
+  }
+}

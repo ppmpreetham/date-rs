@@ -988,3 +988,49 @@ test('end_of_month matches dateFns', (t) => {
 
   console.log('✓ endOfMonth passes')
 })
+
+test('last_day_of_month test matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: 10th of the month at a specific complex time
+    // 14:30:45.123 UTC
+    const input = new Date(Date.UTC(year, month, 10, 14, 30, 45, 123))
+    const result = dateRs.lastDayOfMonth(input.getTime())
+    const resDate = new Date(result)
+
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), daysInMonth[month], `Month ${month} should end on day ${daysInMonth[month]}`)
+
+    // Critical Check: Time must be PRESERVED (unchanged)
+    t.is(resDate.getUTCHours(), 14, 'Hours should remain 14')
+    t.is(resDate.getUTCMinutes(), 30, 'Minutes should remain 30')
+    t.is(resDate.getUTCSeconds(), 45, 'Seconds should remain 45')
+    t.is(resDate.getUTCMilliseconds(), 123, 'Milliseconds should remain 123')
+  }
+
+  // 2. Leap Year vs Non-Leap Year (Time Preservation)
+  const leapInput = new Date(Date.UTC(2024, 1, 5, 9, 0, 0)) // Feb 2024
+  const leapRes = new Date(dateRs.lastDayOfMonth(leapInput.getTime()))
+  t.is(leapRes.getUTCDate(), 29)
+  t.is(leapRes.getUTCHours(), 9)
+
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 5, 9, 0, 0)) // Feb 2023
+  const nonLeapRes = new Date(dateRs.lastDayOfMonth(nonLeapInput.getTime()))
+  t.is(nonLeapRes.getUTCDate(), 28)
+  t.is(nonLeapRes.getUTCHours(), 9)
+
+  // 3. Edge Case: Input is already the last day
+  const alreadyLast = new Date(Date.UTC(2024, 3, 30, 23, 59, 59, 999)) // Apr 30
+  const resSame = new Date(dateRs.lastDayOfMonth(alreadyLast.getTime()))
+  t.is(resSame.getTime(), alreadyLast.getTime(), 'Should not change if already last day')
+
+  // 4. Invalid Inputs
+  t.truthy(isNaN(dateRs.lastDayOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.lastDayOfMonth(Infinity)), 'Infinity should return NaN')
+
+  console.log('✓ lastDayOfMonth passes')
+})
