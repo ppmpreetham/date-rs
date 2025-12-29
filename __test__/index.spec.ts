@@ -867,106 +867,75 @@ test('comparison functions with extreme dates', (t) => {
   console.log('✓ comparison: extreme dates')
 })
 
-test('start_of_month matches date-fns', (t) => {
-  const testCases = [
-    new Date('2024-01-15T10:30:45Z'),
-    new Date('2024-12-25T18:30:00Z'),
-    new Date('2024-06-30T23:59:59Z'),
-  ]
+test('startOfMonth passes', (t) => {
+  const year = 2024
 
-  for (const date of testCases) {
+  // Test all 12 months
+  for (let month = 0; month < 12; month++) {
+    const date = new Date(year, month, 15, 12, 30, 0)
     const rsResult = dateRs.startOfMonth(date.getTime())
     const fnsResult = dateFns.startOfMonth(date).getTime()
 
-    // Both should return valid timestamps
+    // Should return valid timestamp
     t.truthy(!isNaN(rsResult))
     t.truthy(!isNaN(fnsResult))
 
-    // Day should be 1
+    // Should return first day of month at midnight
     const rsDate = new Date(rsResult)
     const fnsDate = new Date(fnsResult)
 
+    t.is(rsDate.getFullYear(), year)
+    t.is(rsDate.getMonth(), month)
     t.is(rsDate.getDate(), 1)
     t.is(rsDate.getHours(), 0)
     t.is(rsDate.getMinutes(), 0)
     t.is(rsDate.getSeconds(), 0)
     t.is(rsDate.getMilliseconds(), 0)
 
+    t.is(fnsDate.getFullYear(), year)
+    t.is(fnsDate.getMonth(), month)
     t.is(fnsDate.getDate(), 1)
     t.is(fnsDate.getHours(), 0)
     t.is(fnsDate.getMinutes(), 0)
     t.is(fnsDate.getSeconds(), 0)
     t.is(fnsDate.getMilliseconds(), 0)
-
-    console.log(`✓ start_of_month: ${date.toISOString()} -> ${new Date(rsResult).toISOString()}`)
   }
-})
 
-test('start_of_month all months', (t) => {
-  const year = 2024
-
-  for (let month = 0; month < 12; month++) {
-    const date = new Date(year, month, 15, 12, 30, 0)
-    const rsResult = dateRs.startOfMonth(date.getTime())
-    const fnsResult = dateFns.startOfMonth(date).getTime()
-
-    const rsDate = new Date(rsResult)
-    const fnsDate = new Date(fnsResult)
-
-    // Should return first day of the month
-    t.is(rsDate.getFullYear(), year)
-    t.is(rsDate.getMonth(), month)
-    t.is(rsDate.getDate(), 1)
-
-    t.is(fnsDate.getFullYear(), year)
-    t.is(fnsDate.getMonth(), month)
-    t.is(fnsDate.getDate(), 1)
-
-    console.log(`✓ start_of_month: ${year}-${month + 1}`)
-  }
-})
-
-test('start_of_month leap year February', (t) => {
+  // Test leap year February
   const leapYearDate = new Date('2024-02-15T10:00:00Z')
-  const rsResult = dateRs.startOfMonth(leapYearDate.getTime())
-  const fnsResult = dateFns.startOfMonth(leapYearDate).getTime()
+  const leapResult = dateRs.startOfMonth(leapYearDate.getTime())
+  const leapFnsResult = dateFns.startOfMonth(leapYearDate).getTime()
 
-  const rsDate = new Date(rsResult)
-  const fnsDate = new Date(fnsResult)
+  const leapDate = new Date(leapResult)
+  const leapFnsDate = new Date(leapFnsResult)
 
-  // Should return Feb 1 in leap year
-  t.is(rsDate.getFullYear(), 2024)
-  t.is(rsDate.getMonth(), 1)
-  t.is(rsDate.getDate(), 1)
+  t.is(leapDate.getFullYear(), 2024)
+  t.is(leapDate.getMonth(), 1)
+  t.is(leapDate.getDate(), 1)
 
-  t.is(fnsDate.getFullYear(), 2024)
-  t.is(fnsDate.getMonth(), 1)
-  t.is(fnsDate.getDate(), 1)
+  t.is(leapFnsDate.getFullYear(), 2024)
+  t.is(leapFnsDate.getMonth(), 1)
+  t.is(leapFnsDate.getDate(), 1)
 
-  console.log('✓ start_of_month: leap year February')
-})
-
-test('start_of_month non-leap year February', (t) => {
+  // Test non-leap year February
   const nonLeapYearDate = new Date('2023-02-28T10:00:00Z')
-  const rsResult = dateRs.startOfMonth(nonLeapYearDate.getTime())
-  const fnsResult = dateFns.startOfMonth(nonLeapYearDate).getTime()
+  const nonLeapResult = dateRs.startOfMonth(nonLeapYearDate.getTime())
+  const nonLeapFnsResult = dateFns.startOfMonth(nonLeapYearDate).getTime()
 
-  const rsDate = new Date(rsResult)
-  const fnsDate = new Date(fnsResult)
+  const nonLeapDate = new Date(nonLeapResult)
+  const nonLeapFnsDate = new Date(nonLeapFnsResult)
 
-  // Should return Feb 1 in non-leap year
-  t.is(rsDate.getFullYear(), 2023)
-  t.is(rsDate.getMonth(), 1)
-  t.is(rsDate.getDate(), 1)
+  t.is(nonLeapDate.getFullYear(), 2023)
+  t.is(nonLeapDate.getMonth(), 1)
+  t.is(nonLeapDate.getDate(), 1)
 
-  t.is(fnsDate.getFullYear(), 2023)
-  t.is(fnsDate.getMonth(), 1)
-  t.is(fnsDate.getDate(), 1)
+  t.is(nonLeapFnsDate.getFullYear(), 2023)
+  t.is(nonLeapFnsDate.getMonth(), 1)
+  t.is(nonLeapFnsDate.getDate(), 1)
 
-  console.log('✓ start_of_month: non-leap year February')
-})
-
-test('start_of_month last day of month', (t) => {
+  // Test last day of month
+  // Note: Both date-fns and date-rs work in local timezone,
+  // so a UTC date gets converted to local timezone first
   const lastDayDate = new Date('2024-01-15T23:59:59Z')
   const rsResult = dateRs.startOfMonth(lastDayDate.getTime())
   const fnsResult = dateFns.startOfMonth(lastDayDate).getTime()
@@ -974,16 +943,11 @@ test('start_of_month last day of month', (t) => {
   const rsDate = new Date(rsResult)
   const fnsDate = new Date(fnsResult)
 
-  // Should return Jan 1 (first day of same month)
-  t.is(rsDate.getFullYear(), 2024)
-  t.is(rsDate.getMonth(), 0)
-  t.is(rsDate.getDate(), 1)
-  t.is(rsDate.getHours(), 0)
-
-  t.is(fnsDate.getFullYear(), 2024)
-  t.is(fnsDate.getMonth(), 0)
-  t.is(fnsDate.getDate(), 1)
-  t.is(fnsDate.getHours(), 0)
+  // Both should return same result (local timezone behavior)
+  t.is(rsResult, fnsResult)
+  t.is(rsDate.getFullYear(), fnsDate.getFullYear())
+  t.is(rsDate.getMonth(), fnsDate.getMonth())
+  t.is(rsDate.getDate(), fnsDate.getDate())
 
   console.log('✓ start_of_month: last day of month')
 })
