@@ -3,6 +3,7 @@
 use napi::bindgen_prelude::{Either, JsObjectValue, Object, Undefined};
 use napi_derive::napi;
 use time::format_description::well_known::Iso8601;
+use time::Time;
 use time::util::days_in_month;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
@@ -1023,15 +1024,17 @@ pub fn start_of_month(date_ms: f64) -> f64 {
     return f64::NAN;
   }
 
-  let Some(dt) = from_ms_local(date_ms) else {
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  let Ok(dt) = OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
     return f64::NAN;
   };
 
-  // Set to first day of month at midnight
   match dt.replace_day(1) {
-    Ok(start) => {
-      let start_midnight = start.replace_time(time::Time::MIDNIGHT);
-      to_ms(start_midnight)
+    Ok(start_of_month_date) => {
+      let start_midnight = start_of_month_date.replace_time(Time::MIDNIGHT);
+
+      (start_midnight.unix_timestamp_nanos() / 1_000_000) as f64
     }
     Err(_) => f64::NAN,
   }

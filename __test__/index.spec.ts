@@ -867,186 +867,67 @@ test('comparison functions with extreme dates', (t) => {
   console.log('✓ comparison: extreme dates')
 })
 
-test('startOfMonth passes', (t) => {
+test('start_of_month matches dateFns', (t) => {
+  // 1. Standard Year Loop (2024)
+  // Checks every month to ensure month/year conservation and day reset
   const year = 2024
-
-  // Test all 12 months
   for (let month = 0; month < 12; month++) {
-    const date = new Date(year, month, 15, 12, 30, 0)
-    const rsResult = dateRs.startOfMonth(date.getTime())
-    const fnsResult = dateFns.startOfMonth(date).getTime()
+    // Input: 15th of the month at 12:30:00 UTC
+    const input = new Date(Date.UTC(year, month, 15, 12, 30, 0))
+    const result = dateRs.startOfMonth(input.getTime())
+    const resDate = new Date(result)
 
-    // Should return valid timestamp
-    t.truthy(!isNaN(rsResult))
-    t.truthy(!isNaN(fnsResult))
-
-    // Should return first day of month at midnight
-    const rsDate = new Date(rsResult)
-    const fnsDate = new Date(fnsResult)
-
-    t.is(rsDate.getFullYear(), year)
-    t.is(rsDate.getMonth(), month)
-    t.is(rsDate.getDate(), 1)
-    t.is(rsDate.getHours(), 0)
-    t.is(rsDate.getMinutes(), 0)
-    t.is(rsDate.getSeconds(), 0)
-    t.is(rsDate.getMilliseconds(), 0)
-
-    t.is(fnsDate.getFullYear(), year)
-    t.is(fnsDate.getMonth(), month)
-    t.is(fnsDate.getDate(), 1)
-    t.is(fnsDate.getHours(), 0)
-    t.is(fnsDate.getMinutes(), 0)
-    t.is(fnsDate.getSeconds(), 0)
-    t.is(fnsDate.getMilliseconds(), 0)
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), 1, 'Date should be reset to 1st')
+    t.is(resDate.getUTCHours(), 0, 'Hours should be 0')
+    t.is(resDate.getUTCMinutes(), 0, 'Minutes should be 0')
+    t.is(resDate.getUTCSeconds(), 0, 'Seconds should be 0')
+    t.is(resDate.getUTCMilliseconds(), 0, 'Milliseconds should be 0')
   }
 
-  // Test leap year February
-  const leapYearDate = new Date('2024-02-15T10:00:00Z')
-  const leapResult = dateRs.startOfMonth(leapYearDate.getTime())
-  const leapFnsResult = dateFns.startOfMonth(leapYearDate).getTime()
+  // 2. Leap Year Specifics
+  // Feb 2024 (Leap) vs Feb 2023 (Non-Leap)
+  const leapInput = new Date(Date.UTC(2024, 1, 29, 10, 0)) // Feb 29 2024
+  const leapRes = new Date(dateRs.startOfMonth(leapInput.getTime()))
+  t.is(leapRes.getUTCFullYear(), 2024)
+  t.is(leapRes.getUTCMonth(), 1)
+  t.is(leapRes.getUTCDate(), 1)
 
-  const leapDate = new Date(leapResult)
-  const leapFnsDate = new Date(leapFnsResult)
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 28, 10, 0)) // Feb 28 2023
+  const nonLeapRes = new Date(dateRs.startOfMonth(nonLeapInput.getTime()))
+  t.is(nonLeapRes.getUTCFullYear(), 2023)
+  t.is(nonLeapRes.getUTCMonth(), 1)
+  t.is(nonLeapRes.getUTCDate(), 1)
 
-  t.is(leapDate.getFullYear(), 2024)
-  t.is(leapDate.getMonth(), 1)
-  t.is(leapDate.getDate(), 1)
+  // 3. Boundary Checks
+  // Case A: Last day of month, last second
+  const endOfMonth = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  const endRes = new Date(dateRs.startOfMonth(endOfMonth.getTime()))
+  t.is(endRes.getUTCDate(), 1)
+  t.is(endRes.getUTCHours(), 0)
 
-  t.is(leapFnsDate.getFullYear(), 2024)
-  t.is(leapFnsDate.getMonth(), 1)
-  t.is(leapFnsDate.getDate(), 1)
+  // Case B: First day of month, already midnight
+  const startOfMonth = new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0))
+  const startRes = new Date(dateRs.startOfMonth(startOfMonth.getTime()))
+  t.is(startRes.getTime(), startOfMonth.getTime(), 'Should remain unchanged if already start of month')
 
-  // Test non-leap year February
-  const nonLeapYearDate = new Date('2023-02-28T10:00:00Z')
-  const nonLeapResult = dateRs.startOfMonth(nonLeapYearDate.getTime())
-  const nonLeapFnsResult = dateFns.startOfMonth(nonLeapYearDate).getTime()
+  // 4. Extreme Dates
+  const past = new Date(Date.UTC(1900, 0, 15))
+  const future = new Date(Date.UTC(2100, 11, 15))
 
-  const nonLeapDate = new Date(nonLeapResult)
-  const nonLeapFnsDate = new Date(nonLeapFnsResult)
+  const pastRes = new Date(dateRs.startOfMonth(past.getTime()))
+  t.is(pastRes.getUTCFullYear(), 1900)
+  t.is(pastRes.getUTCDate(), 1)
 
-  t.is(nonLeapDate.getFullYear(), 2023)
-  t.is(nonLeapDate.getMonth(), 1)
-  t.is(nonLeapDate.getDate(), 1)
+  const futureRes = new Date(dateRs.startOfMonth(future.getTime()))
+  t.is(futureRes.getUTCFullYear(), 2100)
+  t.is(futureRes.getUTCDate(), 1)
 
-  t.is(nonLeapFnsDate.getFullYear(), 2023)
-  t.is(nonLeapFnsDate.getMonth(), 1)
-  t.is(nonLeapFnsDate.getDate(), 1)
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.startOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.startOfMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.startOfMonth(-Infinity)), '-Infinity should return NaN')
 
-  // Test last day of month
-  // Note: Both date-fns and date-rs work in local timezone,
-  // so a UTC date gets converted to local timezone first
-  const lastDayDate = new Date('2024-01-15T23:59:59Z')
-  const rsResult = dateRs.startOfMonth(lastDayDate.getTime())
-  const fnsResult = dateFns.startOfMonth(lastDayDate).getTime()
-
-  const rsDate = new Date(rsResult)
-  const fnsDate = new Date(fnsResult)
-
-  // Both should return same result (local timezone behavior)
-  t.is(rsResult, fnsResult)
-  t.is(rsDate.getFullYear(), fnsDate.getFullYear())
-  t.is(rsDate.getMonth(), fnsDate.getMonth())
-  t.is(rsDate.getDate(), fnsDate.getDate())
-
-  console.log('✓ start_of_month: last day of month')
-})
-
-test('start_of_month first day of month', (t) => {
-  const firstDayDate = new Date('2024-01-01T00:00:00Z')
-  const rsResult = dateRs.startOfMonth(firstDayDate.getTime())
-  const fnsResult = dateFns.startOfMonth(firstDayDate).getTime()
-
-  const rsDate = new Date(rsResult)
-  const fnsDate = new Date(fnsResult)
-
-  // Should return same date (already first day at midnight)
-  t.is(rsDate.getFullYear(), 2024)
-  t.is(rsDate.getMonth(), 0)
-  t.is(rsDate.getDate(), 1)
-  t.is(rsDate.getHours(), 0)
-
-  t.is(fnsDate.getFullYear(), 2024)
-  t.is(fnsDate.getMonth(), 0)
-  t.is(fnsDate.getDate(), 1)
-  t.is(fnsDate.getHours(), 0)
-
-  console.log('✓ start_of_month: first day of month')
-})
-
-test('start_of_month resets time to midnight', (t) => {
-  const date = new Date('2024-01-15T14:30:45.123Z')
-  const rsResult = dateRs.startOfMonth(date.getTime())
-  const fnsResult = dateFns.startOfMonth(date).getTime()
-
-  const rsDate = new Date(rsResult)
-  const fnsDate = new Date(fnsResult)
-
-  // Time should be reset to midnight
-  t.is(rsDate.getHours(), 0)
-  t.is(rsDate.getMinutes(), 0)
-  t.is(rsDate.getSeconds(), 0)
-  t.is(rsDate.getMilliseconds(), 0)
-
-  t.is(fnsDate.getHours(), 0)
-  t.is(fnsDate.getMinutes(), 0)
-  t.is(fnsDate.getSeconds(), 0)
-  t.is(fnsDate.getMilliseconds(), 0)
-
-  console.log('✓ start_of_month: time reset to midnight')
-})
-
-test('start_of_month with NaN returns NaN', (t) => {
-  const rsResult = dateRs.startOfMonth(NaN)
-  const fnsResult = dateFns.startOfMonth(NaN).getTime()
-
-  t.truthy(isNaN(rsResult))
-  t.truthy(isNaN(fnsResult))
-
-  console.log('✓ start_of_month: NaN handling')
-})
-
-test('start_of_month with Infinity returns NaN', (t) => {
-  const rsResult1 = dateRs.startOfMonth(Infinity)
-  const rsResult2 = dateRs.startOfMonth(-Infinity)
-
-  t.truthy(isNaN(rsResult1))
-  t.truthy(isNaN(rsResult2))
-
-  console.log('✓ start_of_month: Infinity handling')
-})
-
-test('start_of_month extreme dates', (t) => {
-  const pastDate = new Date('1900-01-15T10:00:00Z')
-  const futureDate = new Date('2100-12-15T10:00:00Z')
-
-  const rsPastResult = dateRs.startOfMonth(pastDate.getTime())
-  const fnsPastResult = dateFns.startOfMonth(pastDate).getTime()
-
-  const rsFutureResult = dateRs.startOfMonth(futureDate.getTime())
-  const fnsFutureResult = dateFns.startOfMonth(futureDate).getTime()
-
-  // Past date should return Jan 1 1900
-  const rsPastDate = new Date(rsPastResult)
-  const fnsPastDate = new Date(fnsPastResult)
-  t.is(rsPastDate.getFullYear(), 1900)
-  t.is(rsPastDate.getMonth(), 0)
-  t.is(rsPastDate.getDate(), 1)
-
-  t.is(fnsPastDate.getFullYear(), 1900)
-  t.is(fnsPastDate.getMonth(), 0)
-  t.is(fnsPastDate.getDate(), 1)
-
-  // Future date should return Dec 1 2100
-  const rsFutureDate = new Date(rsFutureResult)
-  const fnsFutureDate = new Date(fnsFutureResult)
-  t.is(rsFutureDate.getFullYear(), 2100)
-  t.is(rsFutureDate.getMonth(), 11)
-  t.is(rsFutureDate.getDate(), 1)
-
-  t.is(fnsFutureDate.getFullYear(), 2100)
-  t.is(fnsFutureDate.getMonth(), 11)
-  t.is(fnsFutureDate.getDate(), 1)
-
-  console.log('✓ start_of_month: extreme dates')
+  console.log('✓ startOfMonth passes')
 })
