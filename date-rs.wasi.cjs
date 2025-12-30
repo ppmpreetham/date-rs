@@ -150,6 +150,7 @@ module.exports.isAfter = __napiModule.exports.isAfter
 module.exports.isBefore = __napiModule.exports.isBefore
 module.exports.isEqual = __napiModule.exports.isEqual
 module.exports.isFirstDayOfMonth = __napiModule.exports.isFirstDayOfMonth
+module.exports.isLastDayOfMonth = __napiModule.exports.isLastDayOfMonth
 module.exports.isSameDay = __napiModule.exports.isSameDay
 module.exports.isSameMonth = __napiModule.exports.isSameMonth
 module.exports.isSaturday = __napiModule.exports.isSaturday

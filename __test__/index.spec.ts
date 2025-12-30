@@ -1171,3 +1171,52 @@ test('is_first_day_of_month test matches dateFns', (t) => {
 
   console.log('✓ isFirstDayOfMonth passes')
 })
+
+test('is_last_day_of_month test matches dateFns', (t) => {
+  // 1. Standard Month Check (Leap Year 2024)
+  const year = 2024
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // True Case: The actual last day
+    const lastDay = new Date(Date.UTC(year, month, daysInMonth[month]))
+    t.is(dateRs.isLastDayOfMonth(lastDay.getTime()), true, `Month ${month} day ${daysInMonth[month]} should be true`)
+
+    // False Case: The day before the last day
+    const secondToLast = new Date(Date.UTC(year, month, daysInMonth[month] - 1))
+    t.is(
+      dateRs.isLastDayOfMonth(secondToLast.getTime()),
+      false,
+      `Month ${month} day ${daysInMonth[month] - 1} should be false`,
+    )
+  }
+
+  // 2. Leap Year Specifics
+  // Feb 29, 2024 is last day (True)
+  const febLeap = new Date(Date.UTC(2024, 1, 29))
+  t.is(dateRs.isLastDayOfMonth(febLeap.getTime()), true)
+
+  // Feb 28, 2024 is NOT last day (False)
+  const febLeapNotLast = new Date(Date.UTC(2024, 1, 28))
+  t.is(dateRs.isLastDayOfMonth(febLeapNotLast.getTime()), false)
+
+  // Feb 28, 2023 is last day (True)
+  const febNonLeap = new Date(Date.UTC(2023, 1, 28))
+  t.is(dateRs.isLastDayOfMonth(febNonLeap.getTime()), true)
+
+  // 3. Time Independence
+  // 1st millisecond of the day
+  const startOfDay = new Date(Date.UTC(2024, 0, 31, 0, 0, 0, 0))
+  t.is(dateRs.isLastDayOfMonth(startOfDay.getTime()), true)
+
+  // Last millisecond of the day
+  const endOfDay = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.isLastDayOfMonth(endOfDay.getTime()), true)
+
+  // 4. Invalid Inputs
+  t.is(dateRs.isLastDayOfMonth(NaN), false)
+  t.is(dateRs.isLastDayOfMonth(Infinity), false)
+  t.is(dateRs.isLastDayOfMonth(-Infinity), false)
+
+  console.log('✓ isLastDayOfMonth passes')
+})
