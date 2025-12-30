@@ -155,7 +155,9 @@ pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
     return f64::NAN;
   }
 
-  let Some(dt) = from_ms_local(date_ms) else {
+  // FIXED: Use UTC instead of from_ms_local
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
     return f64::NAN;
   };
 
@@ -600,7 +602,9 @@ pub fn is_weekend(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  // FIXED: Use UTC
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   matches!(dt.weekday(), Weekday::Saturday | Weekday::Sunday)
 }
 
@@ -609,7 +613,8 @@ pub fn is_saturday(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   dt.weekday() == Weekday::Saturday
 }
 
@@ -618,13 +623,21 @@ pub fn is_sunday(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   dt.weekday() == Weekday::Sunday
 }
 
 #[napi]
 pub fn is_same_day(a_ms: f64, b_ms: f64) -> bool {
-  let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
+  // FIXED: Use UTC
+  let a_nanos = (a_ms * 1_000_000.0) as i128;
+  let b_nanos = (b_ms * 1_000_000.0) as i128;
+
+  let (Ok(a), Ok(b)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(a_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(b_nanos),
+  ) else {
     return false;
   };
   a.date() == b.date()
@@ -721,7 +734,14 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
     return vec![];
   }
 
-  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+  // FIXED: Use UTC
+  let start_nanos = (start_ms * 1_000_000.0) as i128;
+  let end_nanos = (end_ms * 1_000_000.0) as i128;
+
+  let (Ok(start), Ok(end)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(start_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(end_nanos),
+  ) else {
     return vec![];
   };
 
@@ -729,7 +749,7 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
   let end_time = if reversed { start } else { end };
   let date_obj = if reversed { end } else { start };
 
-  let offset = date_obj.offset();
+  // UTC has offset 0
   let mut date = date_obj.date();
 
   let mut step = step;
@@ -740,7 +760,8 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
 
   let mut res = vec![];
   loop {
-    let dt = date.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+    // assume_utc() instead of assume_offset()
+    let dt = date.with_time(time::Time::MIDNIGHT).assume_utc();
     if dt > end_time {
       break;
     }
