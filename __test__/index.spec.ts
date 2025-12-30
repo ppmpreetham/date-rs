@@ -1296,3 +1296,46 @@ test('get_month test matches dateFns', (t) => {
 
   console.log('✓ getMonth passes')
 })
+
+test('difference_in_calendar_months test matches dateFns', (t) => {
+  // 1. Same Year, Different Months
+  // Oct 2024 - Aug 2024 = 2 months
+  const oct = new Date(Date.UTC(2024, 9, 1))
+  const aug = new Date(Date.UTC(2024, 7, 1))
+  t.is(dateRs.differenceInCalendarMonths(oct.getTime(), aug.getTime()), 2)
+
+  // 2. Cross-Year Boundary
+  // Jan 2025 - Dec 2024 = 1 month
+  const jan2025 = new Date(Date.UTC(2025, 0, 1))
+  const dec2024 = new Date(Date.UTC(2024, 11, 1))
+  t.is(dateRs.differenceInCalendarMonths(jan2025.getTime(), dec2024.getTime()), 1)
+
+  // 3. Negative Difference (Left < Right)
+  // Aug 2024 - Oct 2024 = -2 months
+  t.is(dateRs.differenceInCalendarMonths(aug.getTime(), oct.getTime()), -2)
+
+  // 4. Same Month (Zero Difference)
+  // Jan 1 2024 vs Jan 31 2024 = 0 months
+  const janStart = new Date(Date.UTC(2024, 0, 1))
+  const janEnd = new Date(Date.UTC(2024, 0, 31))
+  t.is(dateRs.differenceInCalendarMonths(janStart.getTime(), janEnd.getTime()), 0)
+
+  // 5. Day Indifference (Calendar Months Only)
+  // Even if dates are close (Jan 31 vs Feb 1), it counts as 1 month
+  const jan31 = new Date(Date.UTC(2024, 0, 31, 23, 59, 59))
+  const feb1 = new Date(Date.UTC(2024, 1, 1, 0, 0, 0))
+  t.is(dateRs.differenceInCalendarMonths(feb1.getTime(), jan31.getTime()), 1, 'Jan 31 to Feb 1 is 1 calendar month')
+
+  // 6. Large Gap
+  // Jan 2024 vs Jan 2025 = 12 months
+  const yearGapStart = new Date(Date.UTC(2024, 0, 15))
+  const yearGapEnd = new Date(Date.UTC(2025, 0, 15))
+  t.is(dateRs.differenceInCalendarMonths(yearGapEnd.getTime(), yearGapStart.getTime()), 12)
+
+  // 7. Invalid Inputs
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(NaN, Date.now())))
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(Date.now(), NaN)))
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(Infinity, Date.now())))
+
+  console.log('✓ differenceInCalendarMonths passes')
+})

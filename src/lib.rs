@@ -1233,3 +1233,26 @@ pub fn get_month(date_ms: f64) -> f64 {
   // time::Month is 1-indexed (Jan=1)
   (dt.month() as u8 - 1) as f64
 }
+
+#[napi]
+pub fn difference_in_calendar_months(date_left_ms: f64, date_right_ms: f64) -> f64 {
+  if !date_left_ms.is_finite() || !date_right_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let left_nanos = (date_left_ms * 1_000_000.0) as i128;
+  let right_nanos = (date_right_ms * 1_000_000.0) as i128;
+
+  let (Ok(left), Ok(right)) = (
+    time::OffsetDateTime::from_unix_timestamp_nanos(left_nanos),
+    time::OffsetDateTime::from_unix_timestamp_nanos(right_nanos),
+  ) else {
+    return f64::NAN;
+  };
+
+  let year_diff = left.year() - right.year();
+  // Cast months (u8) to i32 to allow for negative subtraction results
+  let month_diff = left.month() as i32 - right.month() as i32;
+
+  (year_diff * 12 + month_diff) as f64
+}

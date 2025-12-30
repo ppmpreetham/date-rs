@@ -75,6 +75,7 @@ export const compareAsc = __napiModule.exports.compareAsc
 export const compareDesc = __napiModule.exports.compareDesc
 export const differenceInBusinessDays = __napiModule.exports.differenceInBusinessDays
 export const differenceInCalendarDays = __napiModule.exports.differenceInCalendarDays
+export const differenceInCalendarMonths = __napiModule.exports.differenceInCalendarMonths
 export const differenceInDays = __napiModule.exports.differenceInDays
 export const differenceInHours = __napiModule.exports.differenceInHours
 export const differenceInMilliseconds = __napiModule.exports.differenceInMilliseconds

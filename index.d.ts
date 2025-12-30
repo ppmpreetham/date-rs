@@ -38,6 +38,8 @@ export declare function differenceInBusinessDays(laterMs: number, earlierMs: num
 
 export declare function differenceInCalendarDays(laterMs: number, earlierMs: number): number
 
+export declare function differenceInCalendarMonths(dateLeftMs: number, dateRightMs: number): number
+
 export declare function differenceInDays(aMs: number, bMs: number): number
 
 export declare function differenceInHours(aMs: number, bMs: number): number

@@ -576,6 +576,7 @@ module.exports.compareAsc = nativeBinding.compareAsc
 module.exports.compareDesc = nativeBinding.compareDesc
 module.exports.differenceInBusinessDays = nativeBinding.differenceInBusinessDays
 module.exports.differenceInCalendarDays = nativeBinding.differenceInCalendarDays
+module.exports.differenceInCalendarMonths = nativeBinding.differenceInCalendarMonths
 module.exports.differenceInDays = nativeBinding.differenceInDays
 module.exports.differenceInHours = nativeBinding.differenceInHours
 module.exports.differenceInMilliseconds = nativeBinding.differenceInMilliseconds

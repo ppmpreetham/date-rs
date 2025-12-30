@@ -127,6 +127,7 @@ module.exports.compareAsc = __napiModule.exports.compareAsc
 module.exports.compareDesc = __napiModule.exports.compareDesc
 module.exports.differenceInBusinessDays = __napiModule.exports.differenceInBusinessDays
 module.exports.differenceInCalendarDays = __napiModule.exports.differenceInCalendarDays
+module.exports.differenceInCalendarMonths = __napiModule.exports.differenceInCalendarMonths
 module.exports.differenceInDays = __napiModule.exports.differenceInDays
 module.exports.differenceInHours = __napiModule.exports.differenceInHours
 module.exports.differenceInMilliseconds = __napiModule.exports.differenceInMilliseconds
