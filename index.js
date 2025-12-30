@@ -593,6 +593,7 @@ module.exports.eachWeekOfInterval = nativeBinding.eachWeekOfInterval
 module.exports.eachYearOfInterval = nativeBinding.eachYearOfInterval
 module.exports.endOfMonth = nativeBinding.endOfMonth
 module.exports.getDaysInMonth = nativeBinding.getDaysInMonth
+module.exports.getMonth = nativeBinding.getMonth
 module.exports.intervalToDailyIntervals = nativeBinding.intervalToDailyIntervals
 module.exports.intervalToDuration = nativeBinding.intervalToDuration
 module.exports.isAfter = nativeBinding.isAfter

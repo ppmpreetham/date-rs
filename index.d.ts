@@ -91,6 +91,8 @@ export declare function endOfMonth(dateMs: number): number
 
 export declare function getDaysInMonth(dateMs: number): number
 
+export declare function getMonth(dateMs: number): number
+
 export interface Interval {
   start: number
   end: number

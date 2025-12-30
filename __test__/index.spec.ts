@@ -1260,3 +1260,39 @@ test('set_month test matches dateFns', (t) => {
 
   console.log('✓ setMonth passes')
 })
+
+test('get_month test matches dateFns', (t) => {
+  const year = 2024
+
+  // 1. Standard Loop (All 12 months)
+  for (let month = 0; month < 12; month++) {
+    // Input: 15th of the month
+    const date = new Date(Date.UTC(year, month, 15))
+    const result = dateRs.getMonth(date.getTime())
+
+    t.is(result, month, `Month ${month} should return ${month}`)
+  }
+
+  // 2. Boundary Check: End of Month (Late Night)
+  // Ensure strict UTC doesn't roll over to next month
+  // Jan 31, 23:59:59.999 UTC -> Should still be Jan (0)
+  const endJan = new Date(Date.UTC(year, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.getMonth(endJan.getTime()), 0, 'Late night Jan 31 should still be Jan (0)')
+
+  // 3. Boundary Check: Start of Month (Early Morning)
+  // Feb 1, 00:00:00.000 UTC -> Should be Feb (1)
+  const startFeb = new Date(Date.UTC(year, 1, 1, 0, 0, 0, 0))
+  t.is(dateRs.getMonth(startFeb.getTime()), 1, 'Early morning Feb 1 should be Feb (1)')
+
+  // 4. Leap Day Check
+  // Feb 29 2024 -> Should be Feb (1)
+  const leapDay = new Date(Date.UTC(2024, 1, 29))
+  t.is(dateRs.getMonth(leapDay.getTime()), 1, 'Leap day should be Feb (1)')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.getMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.getMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.getMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ getMonth passes')
+})

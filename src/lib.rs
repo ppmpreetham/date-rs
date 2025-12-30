@@ -1215,3 +1215,21 @@ pub fn set_month(date_ms: f64, month: f64) -> f64 {
     Err(_) => f64::NAN,
   }
 }
+
+#[napi]
+pub fn get_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // Convert directly to UTC OffsetDateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  // Return 0-indexed month (JavaScript convention: Jan=0, Dec=11)
+  // time::Month is 1-indexed (Jan=1)
+  (dt.month() as u8 - 1) as f64
+}
