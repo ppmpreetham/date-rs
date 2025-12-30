@@ -1141,3 +1141,33 @@ test('is_this_month test matches dateFns', (t) => {
 
   console.log('✓ isThisMonth passes')
 })
+
+test('is_first_day_of_month test matches dateFns', (t) => {
+  const year = 2024
+
+  // 1. True Cases: The 1st of every month
+  for (let month = 0; month < 12; month++) {
+    const date = new Date(Date.UTC(year, month, 1))
+    t.is(dateRs.isFirstDayOfMonth(date.getTime()), true, `Month ${month} 1st should return true`)
+  }
+
+  // 2. False Cases: The 2nd of the month
+  const secondDay = new Date(Date.UTC(year, 0, 2))
+  t.is(dateRs.isFirstDayOfMonth(secondDay.getTime()), false, 'Jan 2nd should return false')
+
+  // 3. Time Independence (Still true at 23:59:59 on the 1st)
+  const endOfFirstDay = new Date(Date.UTC(year, 0, 1, 23, 59, 59, 999))
+  t.is(dateRs.isFirstDayOfMonth(endOfFirstDay.getTime()), true, 'Late night on the 1st is still the 1st')
+
+  // 4. Boundary Check: Last moment of previous month (False)
+  // Date.UTC(2024, 0, 0) results in Dec 31, 2023
+  const endOfPrevMonth = new Date(Date.UTC(year, 0, 0, 23, 59, 59, 999))
+  t.is(dateRs.isFirstDayOfMonth(endOfPrevMonth.getTime()), false, 'Last moment of prev month is false')
+
+  // 5. Invalid Inputs
+  t.is(dateRs.isFirstDayOfMonth(NaN), false)
+  t.is(dateRs.isFirstDayOfMonth(Infinity), false)
+  t.is(dateRs.isFirstDayOfMonth(-Infinity), false)
+
+  console.log('✓ isFirstDayOfMonth passes')
+})

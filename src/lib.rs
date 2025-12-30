@@ -1140,3 +1140,19 @@ pub fn is_this_month(date_ms: f64) -> bool {
   // 3. Compare Year and Month
   dt.year() == now.year() && dt.month() == now.month()
 }
+
+#[napi]
+pub fn is_first_day_of_month(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // Convert timestamp directly to UTC OffsetDateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return false;
+  };
+
+  dt.day() == 1
+}

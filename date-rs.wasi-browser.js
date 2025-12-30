@@ -97,6 +97,7 @@ export const intervalToDuration = __napiModule.exports.intervalToDuration
 export const isAfter = __napiModule.exports.isAfter
 export const isBefore = __napiModule.exports.isBefore
 export const isEqual = __napiModule.exports.isEqual
+export const isFirstDayOfMonth = __napiModule.exports.isFirstDayOfMonth
 export const isSameDay = __napiModule.exports.isSameDay
 export const isSameMonth = __napiModule.exports.isSameMonth
 export const isSaturday = __napiModule.exports.isSaturday

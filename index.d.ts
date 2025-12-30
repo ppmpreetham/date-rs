@@ -106,6 +106,8 @@ export declare function isBefore(date: number, dateToCompare: number): boolean
 
 export declare function isEqual(dateLeft: number, dateRight: number): boolean
 
+export declare function isFirstDayOfMonth(dateMs: number): boolean
+
 export declare function isSameDay(aMs: number, bMs: number): boolean
 
 export declare function isSameMonth(dateLeftMs: number, dateRightMs: number): boolean
