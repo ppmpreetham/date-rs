@@ -1101,3 +1101,22 @@ pub fn get_days_in_month(date_ms: f64) -> f64 {
   let month = dt.month();
   time::util::days_in_month(month, year) as f64
 }
+
+#[napi]
+pub fn is_same_month(date_left_ms: f64, date_right_ms: f64) -> bool {
+  if !date_left_ms.is_finite() || !date_right_ms.is_finite() {
+    return false;
+  }
+
+  let left_nanos = (date_left_ms * 1_000_000.0) as i128;
+  let right_nanos = (date_right_ms * 1_000_000.0) as i128;
+
+  let (Ok(left), Ok(right)) = (
+    time::OffsetDateTime::from_unix_timestamp_nanos(left_nanos),
+    time::OffsetDateTime::from_unix_timestamp_nanos(right_nanos),
+  ) else {
+    return false;
+  };
+
+  left.year() == right.year() && left.month() == right.month()
+}

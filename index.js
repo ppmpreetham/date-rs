@@ -599,6 +599,7 @@ module.exports.isAfter = nativeBinding.isAfter
 module.exports.isBefore = nativeBinding.isBefore
 module.exports.isEqual = nativeBinding.isEqual
 module.exports.isSameDay = nativeBinding.isSameDay
+module.exports.isSameMonth = nativeBinding.isSameMonth
 module.exports.isSaturday = nativeBinding.isSaturday
 module.exports.isSunday = nativeBinding.isSunday
 module.exports.isWeekend = nativeBinding.isWeekend

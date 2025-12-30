@@ -98,6 +98,7 @@ export const isAfter = __napiModule.exports.isAfter
 export const isBefore = __napiModule.exports.isBefore
 export const isEqual = __napiModule.exports.isEqual
 export const isSameDay = __napiModule.exports.isSameDay
+export const isSameMonth = __napiModule.exports.isSameMonth
 export const isSaturday = __napiModule.exports.isSaturday
 export const isSunday = __napiModule.exports.isSunday
 export const isWeekend = __napiModule.exports.isWeekend

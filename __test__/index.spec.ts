@@ -1073,3 +1073,39 @@ test('get_days_in_month test matches dateFns', (t) => {
 
   console.log('✓ getDaysInMonth passes')
 })
+
+test('is_same_month test matches dateFns', (t) => {
+  // 1. Same Month & Year (True)
+  const date1 = new Date(Date.UTC(2023, 8, 2)) // Sept 2, 2023
+  const date2 = new Date(Date.UTC(2023, 8, 25)) // Sept 25, 2023
+  t.is(dateRs.isSameMonth(date1.getTime(), date2.getTime()), true)
+
+  // 2. Same Month, Different Year (False)
+  const sept2023 = new Date(Date.UTC(2023, 8, 2))
+  const sept2024 = new Date(Date.UTC(2024, 8, 2))
+  t.is(dateRs.isSameMonth(sept2023.getTime(), sept2024.getTime()), false)
+
+  // 3. Different Month, Same Year (False)
+  const sept = new Date(Date.UTC(2023, 8, 2))
+  const oct = new Date(Date.UTC(2023, 9, 2))
+  t.is(dateRs.isSameMonth(sept.getTime(), oct.getTime()), false)
+
+  // 4. Boundary Check (Adjacent Milliseconds)
+  // End of Jan vs Start of Feb
+  const endJan = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  const startFeb = new Date(Date.UTC(2024, 1, 1, 0, 0, 0, 0))
+  t.is(dateRs.isSameMonth(endJan.getTime(), startFeb.getTime()), false)
+
+  // 5. First vs Last Millisecond of Month (True)
+  const startMonth = new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0))
+  const endMonth = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.isSameMonth(startMonth.getTime(), endMonth.getTime()), true)
+
+  // 6. Invalid Inputs
+  t.is(dateRs.isSameMonth(NaN, Date.now()), false)
+  t.is(dateRs.isSameMonth(Date.now(), NaN), false)
+  t.is(dateRs.isSameMonth(Infinity, Date.now()), false)
+  t.is(dateRs.isSameMonth(Date.now(), -Infinity), false)
+
+  console.log('✓ isSameMonth passes')
+})

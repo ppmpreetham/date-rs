@@ -108,6 +108,8 @@ export declare function isEqual(dateLeft: number, dateRight: number): boolean
 
 export declare function isSameDay(aMs: number, bMs: number): boolean
 
+export declare function isSameMonth(dateLeftMs: number, dateRightMs: number): boolean
+
 export declare function isSaturday(dateMs: number): boolean
 
 export declare function isSunday(dateMs: number): boolean
