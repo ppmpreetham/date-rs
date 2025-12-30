@@ -38,6 +38,8 @@ export declare function differenceInBusinessDays(laterMs: number, earlierMs: num
 
 export declare function differenceInCalendarDays(laterMs: number, earlierMs: number): number
 
+export declare function differenceInCalendarMonths(dateLeftMs: number, dateRightMs: number): number
+
 export declare function differenceInDays(aMs: number, bMs: number): number
 
 export declare function differenceInHours(aMs: number, bMs: number): number
@@ -79,6 +81,8 @@ export declare function eachDayOfInterval(startMs: number, endMs: number, stepOp
 
 export declare function eachMonthOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
+export declare function eachMonthOfIntervalWithStep(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
+
 export declare function eachQuarterOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
 export declare function eachWeekendOfInterval(startMs: number, endMs: number): Array<number>
@@ -86,6 +90,12 @@ export declare function eachWeekendOfInterval(startMs: number, endMs: number): A
 export declare function eachWeekOfInterval(startMs: number, endMs: number, options?: object | undefined | null): Array<number>
 
 export declare function eachYearOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
+
+export declare function endOfMonth(dateMs: number): number
+
+export declare function getDaysInMonth(dateMs: number): number
+
+export declare function getMonth(dateMs: number): number
 
 export interface Interval {
   start: number
@@ -102,13 +112,23 @@ export declare function isBefore(date: number, dateToCompare: number): boolean
 
 export declare function isEqual(dateLeft: number, dateRight: number): boolean
 
+export declare function isFirstDayOfMonth(dateMs: number): boolean
+
+export declare function isLastDayOfMonth(dateMs: number): boolean
+
 export declare function isSameDay(aMs: number, bMs: number): boolean
+
+export declare function isSameMonth(dateLeftMs: number, dateRightMs: number): boolean
 
 export declare function isSaturday(dateMs: number): boolean
 
 export declare function isSunday(dateMs: number): boolean
 
+export declare function isThisMonth(dateMs: number): boolean
+
 export declare function isWeekend(dateMs: number): boolean
+
+export declare function lastDayOfMonth(dateMs: number): number
 
 export declare function max(dates: Array<number>): number
 
@@ -116,7 +136,11 @@ export declare function min(dates: Array<number>): number
 
 export declare function parseIso(isoString: string): number
 
+export declare function setMonth(dateMs: number, month: number): number
+
 export declare function startOfDay(timestamp: number): number
+
+export declare function startOfMonth(dateMs: number): number
 
 export declare function subDays(dateMs: number, amount: number): number
 
