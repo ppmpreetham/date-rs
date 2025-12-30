@@ -81,6 +81,8 @@ export declare function eachDayOfInterval(startMs: number, endMs: number, stepOp
 
 export declare function eachMonthOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
+export declare function eachMonthOfIntervalWithStep(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
+
 export declare function eachQuarterOfInterval(startMs: number, endMs: number, stepOpt?: number | undefined | null): Array<number>
 
 export declare function eachWeekendOfInterval(startMs: number, endMs: number): Array<number>

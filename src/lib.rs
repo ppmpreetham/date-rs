@@ -824,42 +824,80 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
     return vec![];
   }
 
-  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+  if !start_ms.is_finite() || !end_ms.is_finite() {
+    return vec![];
+  }
+
+  // 1. Strict UTC Parsing (No Local Time)
+  let start_nanos = (start_ms * 1_000_000.0) as i128;
+  let end_nanos = (end_ms * 1_000_000.0) as i128;
+
+  let Ok(start_dt) = OffsetDateTime::from_unix_timestamp_nanos(start_nanos) else {
+    return vec![];
+  };
+  let Ok(end_dt) = OffsetDateTime::from_unix_timestamp_nanos(end_nanos) else {
     return vec![];
   };
 
-  let mut reversed = start > end;
-  let end_time = if reversed { start } else { end };
-  let date = if reversed { end } else { start };
+  // 2. Handle Reversal and Step Direction
+  let mut reversed = start_dt > end_dt;
+  let mut current_step = step;
 
-  let offset = date.offset();
-  let mut year = date.year();
-  let mut month = date.month();
-
-  let mut step = step;
-  if step < 0 {
-    step = -step;
+  // If step is negative, invert direction logic
+  if current_step < 0 {
+    current_step = -current_step;
     reversed = !reversed;
   }
 
-  let mut res = vec![];
-  loop {
-    let d = Date::from_calendar_date(year, month, 1).unwrap();
-    let dt = d.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+  // Define boundaries based on normalized direction
+  let (start_limit, end_limit) = if start_dt > end_dt {
+    (end_dt, start_dt)
+  } else {
+    (start_dt, end_dt)
+  };
 
-    if dt > end_time {
+  // 3. Initialize Loop Variables
+  let mut year = start_limit.year();
+  let mut month = start_limit.month();
+  let mut res = Vec::new();
+
+  // 4. Calendar Interval Loop
+  loop {
+    // Normalize to 1st of the month
+    let Ok(date_part) = Date::from_calendar_date(year, month, 1) else {
+      break;
+    };
+
+    // Construct UTC Midnight (Crucial for Predictable UTC)
+    let dt = date_part.with_time(Time::MIDNIGHT).assume_utc();
+
+    // Stop if we have exceeded the end boundary
+    if dt > end_limit {
       break;
     }
 
-    res.push(to_ms(dt));
+    // Add to result
+    res.push((dt.unix_timestamp_nanos() / 1_000_000) as f64);
 
-    let idx = month as i32 - 1 + step;
-    year += idx.div_euclid(12);
-    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();
+    // Calculate next month using integer arithmetic (avoiding Duration/DST issues)
+    // Month is 1-indexed in `time` crate, so we shift to 0-index for math
+    let month_idx = month as i32 - 1 + current_step;
+
+    // Update Year
+    year += month_idx.div_euclid(12);
+
+    // Update Month (Map back to 1-indexed Enum)
+    let Ok(next_month) = Month::try_from((month_idx.rem_euclid(12) + 1) as u8) else {
+      break;
+    };
+    month = next_month;
   }
+
+  // 5. Apply Reversal if needed (e.g., start > end originally)
   if reversed {
     res.reverse();
   }
+
   res
 }
 
@@ -1255,4 +1293,13 @@ pub fn difference_in_calendar_months(date_left_ms: f64, date_right_ms: f64) -> f
   let month_diff = left.month() as i32 - right.month() as i32;
 
   (year_diff * 12 + month_diff) as f64
+}
+
+#[napi]
+pub fn each_month_of_interval_with_step(
+  start_ms: f64,
+  end_ms: f64,
+  step_opt: Option<i32>,
+) -> Vec<f64> {
+  each_month_of_interval(start_ms, end_ms, step_opt)
 }

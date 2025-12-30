@@ -1339,3 +1339,60 @@ test('difference_in_calendar_months test matches dateFns', (t) => {
 
   console.log('✓ differenceInCalendarMonths passes')
 })
+
+test('each_month_of_interval_with_step test matches dateFns', (t) => {
+  // 1. Standard Case (Jan 15 to Apr 10)
+  // Logic should normalize these to: Jan 1, Feb 1, Mar 1, Apr 1
+  const start = new Date(Date.UTC(2024, 0, 15, 14, 30))
+  const end = new Date(Date.UTC(2024, 3, 10, 9, 0))
+
+  const result = dateRs.eachMonthOfIntervalWithStep(start.getTime(), end.getTime(), 1)
+
+  t.is(result.length, 4, 'Should return 4 months (Jan, Feb, Mar, Apr)')
+
+  // Verify strict normalization (1st of month, Midnight UTC)
+  const first = new Date(result[0])
+  t.is(first.getUTCFullYear(), 2024)
+  t.is(first.getUTCMonth(), 0) // Jan
+  t.is(first.getUTCDate(), 1, 'Should reset to 1st of month')
+  t.is(first.getUTCHours(), 0, 'Should reset to midnight')
+
+  const last = new Date(result[3])
+  t.is(last.getUTCMonth(), 3) // Apr
+  t.is(last.getUTCDate(), 1)
+
+  // 2. Step Logic (Step = 2)
+  // Jan 15 to June 15 -> Jan, Mar, May
+  const endJune = new Date(Date.UTC(2024, 5, 15))
+  const resultStep2 = dateRs.eachMonthOfIntervalWithStep(start.getTime(), endJune.getTime(), 2)
+
+  t.is(resultStep2.length, 3)
+  t.is(new Date(resultStep2[0]).getUTCMonth(), 0) // Jan
+  t.is(new Date(resultStep2[1]).getUTCMonth(), 2) // Mar
+  t.is(new Date(resultStep2[2]).getUTCMonth(), 4) // May
+
+  // 3. Reverse Logic (Start > End)
+  // Your code detects `start > end`, swaps them, generates list, then reverses result.
+  // March to January -> March, February, January
+  const startMar = new Date(Date.UTC(2024, 2, 10))
+  const endJan = new Date(Date.UTC(2024, 0, 10))
+
+  const resultRev = dateRs.eachMonthOfIntervalWithStep(startMar.getTime(), endJan.getTime(), 1)
+
+  t.is(resultRev.length, 3)
+  t.is(new Date(resultRev[0]).getUTCMonth(), 2) // Mar
+  t.is(new Date(resultRev[1]).getUTCMonth(), 1) // Feb
+  t.is(new Date(resultRev[2]).getUTCMonth(), 0) // Jan
+
+  // 4. Edge Case: Step = 0
+  // Your code explicitly returns empty vec![]
+  const resultZero = dateRs.eachMonthOfIntervalWithStep(start.getTime(), end.getTime(), 0)
+  t.deepEqual(resultZero, [])
+
+  // 5. Invalid Inputs
+  // Your code returns vec![] if date parsing fails
+  const resultNaN = dateRs.eachMonthOfIntervalWithStep(NaN, end.getTime(), 1)
+  t.deepEqual(resultNaN, [])
+
+  console.log('✓ eachMonthOfIntervalWithStep passes')
+})

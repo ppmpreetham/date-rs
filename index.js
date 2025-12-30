@@ -588,6 +588,7 @@ module.exports.differenceInWeeks = nativeBinding.differenceInWeeks
 module.exports.differenceInYears = nativeBinding.differenceInYears
 module.exports.eachDayOfInterval = nativeBinding.eachDayOfInterval
 module.exports.eachMonthOfInterval = nativeBinding.eachMonthOfInterval
+module.exports.eachMonthOfIntervalWithStep = nativeBinding.eachMonthOfIntervalWithStep
 module.exports.eachQuarterOfInterval = nativeBinding.eachQuarterOfInterval
 module.exports.eachWeekendOfInterval = nativeBinding.eachWeekendOfInterval
 module.exports.eachWeekOfInterval = nativeBinding.eachWeekOfInterval

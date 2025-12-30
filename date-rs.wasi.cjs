@@ -139,6 +139,7 @@ module.exports.differenceInWeeks = __napiModule.exports.differenceInWeeks
 module.exports.differenceInYears = __napiModule.exports.differenceInYears
 module.exports.eachDayOfInterval = __napiModule.exports.eachDayOfInterval
 module.exports.eachMonthOfInterval = __napiModule.exports.eachMonthOfInterval
+module.exports.eachMonthOfIntervalWithStep = __napiModule.exports.eachMonthOfIntervalWithStep
 module.exports.eachQuarterOfInterval = __napiModule.exports.eachQuarterOfInterval
 module.exports.eachWeekendOfInterval = __napiModule.exports.eachWeekendOfInterval
 module.exports.eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval

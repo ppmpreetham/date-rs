@@ -87,6 +87,7 @@ export const differenceInWeeks = __napiModule.exports.differenceInWeeks
 export const differenceInYears = __napiModule.exports.differenceInYears
 export const eachDayOfInterval = __napiModule.exports.eachDayOfInterval
 export const eachMonthOfInterval = __napiModule.exports.eachMonthOfInterval
+export const eachMonthOfIntervalWithStep = __napiModule.exports.eachMonthOfIntervalWithStep
 export const eachQuarterOfInterval = __napiModule.exports.eachQuarterOfInterval
 export const eachWeekendOfInterval = __napiModule.exports.eachWeekendOfInterval
 export const eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
