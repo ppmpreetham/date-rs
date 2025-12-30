@@ -169,12 +169,10 @@ pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
 
     if sign > 0.0 {
       current_idx = (current_idx + 1) % 7;
+    } else if current_idx == 0 {
+      current_idx = 6;
     } else {
-      if current_idx == 0 {
-        current_idx = 6;
-      } else {
-        current_idx -= 1;
-      }
+      current_idx -= 1;
     }
 
     let is_weekend = current_idx >= 5;
@@ -735,7 +733,7 @@ pub fn each_weekend_of_interval(start_ms: f64, end_ms: f64) -> Vec<f64> {
     return vec![];
   };
 
-  let mut reversed = start > end;
+  let reversed = start > end;
   let end_time = if reversed { start } else { end };
   let date_obj = if reversed { end } else { start };
 
@@ -1223,7 +1221,7 @@ pub fn set_month(date_ms: f64, month: f64) -> f64 {
 
   let month_int = month.trunc() as i32;
 
-  if month_int < 0 || month_int > 11 {
+  if !(0..=11).contains(&month_int) {
     return f64::NAN;
   }
 
