@@ -23,27 +23,6 @@ fn to_ms(dt: OffsetDateTime) -> f64 {
   dt.unix_timestamp_nanos() as f64 / 1_000_000.0
 }
 
-fn add_months_local_internal(ms: f64, amount: i32) -> Option<OffsetDateTime> {
-  let dt = from_ms_local(ms)?;
-  let mut year = dt.year();
-  let month0 = dt.month() as i32 - 1;
-  let day = dt.day();
-
-  let total = month0 + amount;
-  year += total.div_euclid(12);
-  let month_index = total.rem_euclid(12);
-
-  let month = Month::try_from((month_index + 1) as u8).ok()?;
-
-  let dim = days_in_month(month, year);
-  let clamped_day = day.min(dim);
-
-  let tmp = dt.replace_day(1).ok()?;
-  let tmp = tmp.replace_year(year).ok()?;
-  let tmp = tmp.replace_month(month).ok()?;
-  tmp.replace_day(clamped_day).ok()
-}
-
 #[napi]
 pub fn add_milliseconds(date_ms: f64, amount: f64) -> f64 {
   date_ms + amount
@@ -74,13 +53,41 @@ pub fn add_weeks(date_ms: f64, amount: f64) -> f64 {
   date_ms + amount * 604_800_000.0
 }
 
+// Helper for internal use to avoid code duplication
+fn add_months_utc_internal(ms: f64, amount: i32) -> Option<OffsetDateTime> {
+  // 1. Parse as Strict UTC
+  let nanos = (ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).ok()?;
+
+  let mut year = dt.year();
+  let month0 = dt.month() as i32 - 1;
+  let day = dt.day();
+
+  // 2. Calculate new Month/Year
+  let total = month0 + amount;
+  year += total.div_euclid(12);
+  let month_index = total.rem_euclid(12);
+
+  let month = Month::try_from((month_index + 1) as u8).ok()?;
+
+  // 3. Clamp Day (e.g. Jan 31 -> Feb 28/29)
+  let dim = days_in_month(month, year);
+  let clamped_day = day.min(dim);
+
+  // 4. Construct new date preserving time
+  let tmp = dt.replace_day(1).ok()?;
+  let tmp = tmp.replace_year(year).ok()?;
+  let tmp = tmp.replace_month(month).ok()?;
+  tmp.replace_day(clamped_day).ok()
+}
+
 #[napi]
 pub fn add_months(date_ms: f64, amount: f64) -> f64 {
   if !date_ms.is_finite() || !amount.is_finite() {
     return f64::NAN;
   }
 
-  match add_months_local_internal(date_ms, amount.trunc() as i32) {
+  match add_months_utc_internal(date_ms, amount.trunc() as i32) {
     Some(dt) => to_ms(dt),
     None => f64::NAN,
   }
@@ -277,18 +284,20 @@ pub fn difference_in_calendar_days(later_ms: f64, earlier_ms: f64) -> f64 {
   if !later_ms.is_finite() || !earlier_ms.is_finite() {
     return f64::NAN;
   }
-  let (Some(later), Some(earlier)) = (from_ms_local(later_ms), from_ms_local(earlier_ms)) else {
+
+  let later_nanos = (later_ms * 1_000_000.0) as i128;
+  let earlier_nanos = (earlier_ms * 1_000_000.0) as i128;
+
+  let (Ok(later), Ok(earlier)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(later_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(earlier_nanos),
+  ) else {
     return f64::NAN;
   };
 
-  let later_midnight = later
-    .date()
-    .with_time(time::Time::MIDNIGHT)
-    .assume_offset(later.offset());
-  let earlier_midnight = earlier
-    .date()
-    .with_time(time::Time::MIDNIGHT)
-    .assume_offset(earlier.offset());
+  // Strip time by setting to Midnight UTC
+  let later_midnight = later.replace_time(time::Time::MIDNIGHT);
+  let earlier_midnight = earlier.replace_time(time::Time::MIDNIGHT);
 
   let later_ts = to_ms(later_midnight);
   let earlier_ts = to_ms(earlier_midnight);
@@ -301,14 +310,19 @@ pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
   if !later_ms.is_finite() || !earlier_ms.is_finite() {
     return f64::NAN;
   }
+
+  // Uses the corrected UTC-based calendar_days function above
   let diff = difference_in_calendar_days(later_ms, earlier_ms);
   if diff == 0.0 {
     return 0.0;
   }
 
-  let Some(earlier_dt) = from_ms_local(earlier_ms) else {
+  // Parse earlier_ms as UTC for weekday calculation
+  let earlier_nanos = (earlier_ms * 1_000_000.0) as i128;
+  let Ok(earlier_dt) = OffsetDateTime::from_unix_timestamp_nanos(earlier_nanos) else {
     return f64::NAN;
   };
+
   let mut current_idx = earlier_dt.weekday().number_from_monday() - 1;
 
   let sign = if diff < 0.0 { -1.0 } else { 1.0 };
@@ -349,14 +363,26 @@ pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
 
 #[napi]
 pub fn difference_in_months(a_ms: f64, b_ms: f64) -> f64 {
-  let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
+  if !a_ms.is_finite() || !b_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let a_nanos = (a_ms * 1_000_000.0) as i128;
+  let b_nanos = (b_ms * 1_000_000.0) as i128;
+
+  let (Ok(a), Ok(b)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(a_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(b_nanos),
+  ) else {
     return f64::NAN;
   };
+
   let sign = if a >= b { 1 } else { -1 };
   let years = a.year() - b.year();
   let mut months = years * 12 + (a.month() as i32 - b.month() as i32);
 
-  let shifted = add_months_local_internal(b_ms, months)
+  // Use the new UTC internal helper for the check
+  let shifted = add_months_utc_internal(b_ms, months)
     .map(to_ms)
     .unwrap_or(f64::NAN);
 
