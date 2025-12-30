@@ -610,6 +610,7 @@ module.exports.lastDayOfMonth = nativeBinding.lastDayOfMonth
 module.exports.max = nativeBinding.max
 module.exports.min = nativeBinding.min
 module.exports.parseIso = nativeBinding.parseIso
+module.exports.setMonth = nativeBinding.setMonth
 module.exports.startOfDay = nativeBinding.startOfDay
 module.exports.startOfMonth = nativeBinding.startOfMonth
 module.exports.subDays = nativeBinding.subDays

@@ -109,6 +109,7 @@ export const lastDayOfMonth = __napiModule.exports.lastDayOfMonth
 export const max = __napiModule.exports.max
 export const min = __napiModule.exports.min
 export const parseIso = __napiModule.exports.parseIso
+export const setMonth = __napiModule.exports.setMonth
 export const startOfDay = __napiModule.exports.startOfDay
 export const startOfMonth = __napiModule.exports.startOfMonth
 export const subDays = __napiModule.exports.subDays

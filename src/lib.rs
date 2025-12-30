@@ -1176,3 +1176,42 @@ pub fn is_last_day_of_month(date_ms: f64) -> bool {
 
   dt.day() == days_in_month
 }
+
+#[napi]
+pub fn set_month(date_ms: f64, month: f64) -> f64 {
+  if !date_ms.is_finite() || !month.is_finite() {
+    return f64::NAN;
+  }
+
+  let month_int = month.trunc() as i32;
+
+  if month_int < 0 || month_int > 11 {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let Ok(new_month) = time::Month::try_from((month_int + 1) as u8) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let current_day = dt.day();
+
+  let days_in_new_month = time::util::days_in_month(new_month, year);
+
+  // Clamp the day BEFORE changing the month
+  // (Prevents "Jan 31 -> Feb" from erroring due to invalid intermediate date)
+  let clamped_day = current_day.min(days_in_new_month);
+
+  match dt.replace_day(clamped_day) {
+    Ok(with_safe_day) => match with_safe_day.replace_month(new_month) {
+      Ok(final_dt) => (final_dt.unix_timestamp_nanos() / 1_000_000) as f64,
+      Err(_) => f64::NAN,
+    },
+    Err(_) => f64::NAN,
+  }
+}

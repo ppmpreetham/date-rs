@@ -130,6 +130,8 @@ export declare function min(dates: Array<number>): number
 
 export declare function parseIso(isoString: string): number
 
+export declare function setMonth(dateMs: number, month: number): number
+
 export declare function startOfDay(timestamp: number): number
 
 export declare function startOfMonth(dateMs: number): number

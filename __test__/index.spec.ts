@@ -1220,3 +1220,43 @@ test('is_last_day_of_month test matches dateFns', (t) => {
 
   console.log('✓ isLastDayOfMonth passes')
 })
+
+test('set_month test matches dateFns', (t) => {
+  // 1. Standard Change (Jan -> Feb)
+  const jan15 = new Date(Date.UTC(2024, 0, 15, 10, 30))
+  const febResult = dateRs.setMonth(jan15.getTime(), 1) // Set to Feb (1)
+  const febDate = new Date(febResult)
+
+  t.is(febDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(febDate.getUTCDate(), 15, 'Day should remain 15')
+  t.is(febDate.getUTCHours(), 10, 'Time should be preserved')
+
+  // 2. Day Clamping (Jan 31 -> Feb 2024 [Leap])
+  // Should clamp to Feb 29
+  const jan31 = new Date(Date.UTC(2024, 0, 31))
+  const leapClampResult = dateRs.setMonth(jan31.getTime(), 1)
+  const leapClampDate = new Date(leapClampResult)
+
+  t.is(leapClampDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(leapClampDate.getUTCDate(), 29, 'Jan 31 should clamp to Feb 29 in leap year')
+
+  // 3. Day Clamping (Jan 31 -> Feb 2023 [Non-Leap])
+  // Should clamp to Feb 28
+  const jan31NonLeap = new Date(Date.UTC(2023, 0, 31))
+  const nonLeapClampResult = dateRs.setMonth(jan31NonLeap.getTime(), 1)
+  const nonLeapClampDate = new Date(nonLeapClampResult)
+
+  t.is(nonLeapClampDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(nonLeapClampDate.getUTCDate(), 28, 'Jan 31 should clamp to Feb 28 in non-leap year')
+
+  // 4. Invalid Range (User logic restricts to 0-11)
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), 12)), 'Month 12 should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), -1)), 'Month -1 should return NaN')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.setMonth(NaN, 1)), 'NaN date should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), NaN)), 'NaN month should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Infinity, 1)), 'Infinity date should return NaN')
+
+  console.log('✓ setMonth passes')
+})

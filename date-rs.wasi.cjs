@@ -161,6 +161,7 @@ module.exports.lastDayOfMonth = __napiModule.exports.lastDayOfMonth
 module.exports.max = __napiModule.exports.max
 module.exports.min = __napiModule.exports.min
 module.exports.parseIso = __napiModule.exports.parseIso
+module.exports.setMonth = __napiModule.exports.setMonth
 module.exports.startOfDay = __napiModule.exports.startOfDay
 module.exports.startOfMonth = __napiModule.exports.startOfMonth
 module.exports.subDays = __napiModule.exports.subDays
