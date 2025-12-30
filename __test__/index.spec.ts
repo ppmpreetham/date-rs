@@ -1034,3 +1034,42 @@ test('last_day_of_month test matches dateFns', (t) => {
 
   console.log('✓ lastDayOfMonth passes')
 })
+
+test('get_days_in_month test matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  const expectedDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: Arbitrary day in the month (e.g., 15th)
+    const input = new Date(Date.UTC(year, month, 15))
+    const result = dateRs.getDaysInMonth(input.getTime())
+
+    t.is(result, expectedDays[month], `Month ${month} in ${year} should have ${expectedDays[month]} days`)
+  }
+
+  // 2. Non-Leap Year Check (Feb 2023)
+  const feb2023 = new Date(Date.UTC(2023, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb2023.getTime()), 28, 'Feb 2023 should have 28 days')
+
+  // 3. Century Leap Year Edge Cases
+  // 1900: Divisible by 100 but NOT 400 => Not a leap year (28 days)
+  const feb1900 = new Date(Date.UTC(1900, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb1900.getTime()), 28, 'Feb 1900 should have 28 days')
+
+  // 2000: Divisible by 400 => Leap year (29 days)
+  const feb2000 = new Date(Date.UTC(2000, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb2000.getTime()), 29, 'Feb 2000 should have 29 days')
+
+  // 4. Time Independence
+  // Even if time is just before midnight on the last day, the count is based on the month
+  const lateNight = new Date(Date.UTC(2024, 1, 29, 23, 59, 59))
+  t.is(dateRs.getDaysInMonth(lateNight.getTime()), 29, 'Time of day should not affect day count')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.getDaysInMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.getDaysInMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.getDaysInMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ getDaysInMonth passes')
+})

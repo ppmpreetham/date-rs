@@ -91,6 +91,7 @@ export const eachWeekendOfInterval = __napiModule.exports.eachWeekendOfInterval
 export const eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
 export const eachYearOfInterval = __napiModule.exports.eachYearOfInterval
 export const endOfMonth = __napiModule.exports.endOfMonth
+export const getDaysInMonth = __napiModule.exports.getDaysInMonth
 export const intervalToDailyIntervals = __napiModule.exports.intervalToDailyIntervals
 export const intervalToDuration = __napiModule.exports.intervalToDuration
 export const isAfter = __napiModule.exports.isAfter

@@ -143,6 +143,7 @@ module.exports.eachWeekendOfInterval = __napiModule.exports.eachWeekendOfInterva
 module.exports.eachWeekOfInterval = __napiModule.exports.eachWeekOfInterval
 module.exports.eachYearOfInterval = __napiModule.exports.eachYearOfInterval
 module.exports.endOfMonth = __napiModule.exports.endOfMonth
+module.exports.getDaysInMonth = __napiModule.exports.getDaysInMonth
 module.exports.intervalToDailyIntervals = __napiModule.exports.intervalToDailyIntervals
 module.exports.intervalToDuration = __napiModule.exports.intervalToDuration
 module.exports.isAfter = __napiModule.exports.isAfter
