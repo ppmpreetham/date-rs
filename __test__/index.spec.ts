@@ -1109,3 +1109,35 @@ test('is_same_month test matches dateFns', (t) => {
 
   console.log('✓ isSameMonth passes')
 })
+
+test('is_this_month test matches dateFns', (t) => {
+  // Get "now" in UTC to establish the baseline for the test run
+  const now = new Date()
+  const currentYear = now.getUTCFullYear()
+  const currentMonth = now.getUTCMonth()
+
+  // 1. True Case: A date inside the current UTC month
+  // We construct a date for the 15th of the current month
+  const thisMonthDate = new Date(Date.UTC(currentYear, currentMonth, 15))
+  t.is(dateRs.isThisMonth(thisMonthDate.getTime()), true, 'Current UTC month should return true')
+
+  // 2. False Case: Last Month
+  // Date.UTC handles underflow (e.g., if currentMonth is Jan (0), -1 becomes Dec of prev year)
+  const lastMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 15))
+  t.is(dateRs.isThisMonth(lastMonthDate.getTime()), false, 'Previous month should return false')
+
+  // 3. False Case: Next Month
+  const nextMonthDate = new Date(Date.UTC(currentYear, currentMonth + 1, 15))
+  t.is(dateRs.isThisMonth(nextMonthDate.getTime()), false, 'Next month should return false')
+
+  // 4. False Case: Same Month, Different Year
+  const lastYearDate = new Date(Date.UTC(currentYear - 1, currentMonth, 15))
+  t.is(dateRs.isThisMonth(lastYearDate.getTime()), false, 'Same month last year should return false')
+
+  // 5. Invalid Inputs
+  t.is(dateRs.isThisMonth(NaN), false)
+  t.is(dateRs.isThisMonth(Infinity), false)
+  t.is(dateRs.isThisMonth(-Infinity), false)
+
+  console.log('✓ isThisMonth passes')
+})

@@ -153,6 +153,7 @@ module.exports.isSameDay = __napiModule.exports.isSameDay
 module.exports.isSameMonth = __napiModule.exports.isSameMonth
 module.exports.isSaturday = __napiModule.exports.isSaturday
 module.exports.isSunday = __napiModule.exports.isSunday
+module.exports.isThisMonth = __napiModule.exports.isThisMonth
 module.exports.isWeekend = __napiModule.exports.isWeekend
 module.exports.lastDayOfMonth = __napiModule.exports.lastDayOfMonth
 module.exports.max = __napiModule.exports.max

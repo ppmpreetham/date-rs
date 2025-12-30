@@ -602,6 +602,7 @@ module.exports.isSameDay = nativeBinding.isSameDay
 module.exports.isSameMonth = nativeBinding.isSameMonth
 module.exports.isSaturday = nativeBinding.isSaturday
 module.exports.isSunday = nativeBinding.isSunday
+module.exports.isThisMonth = nativeBinding.isThisMonth
 module.exports.isWeekend = nativeBinding.isWeekend
 module.exports.lastDayOfMonth = nativeBinding.lastDayOfMonth
 module.exports.max = nativeBinding.max

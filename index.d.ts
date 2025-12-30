@@ -114,6 +114,8 @@ export declare function isSaturday(dateMs: number): boolean
 
 export declare function isSunday(dateMs: number): boolean
 
+export declare function isThisMonth(dateMs: number): boolean
+
 export declare function isWeekend(dateMs: number): boolean
 
 export declare function lastDayOfMonth(dateMs: number): number
