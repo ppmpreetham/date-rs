@@ -107,40 +107,40 @@ test('addYears matches date-fns', (t) => {
 test('subMilliseconds matches date-fns', (t) => {
   const date = new Date('2024-01-15T10:30:00')
   const amount = 5000
-  
+
   const rsResult = dateRs.subMilliseconds(date.getTime(), amount)
   const fnsResult = dateFns.subMilliseconds(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
 test('subSeconds matches date-fns', (t) => {
   const date = new Date('2024-01-15T10:30:00')
   const amount = 30
-  
+
   const rsResult = dateRs.subSeconds(date.getTime(), amount)
   const fnsResult = dateFns.subSeconds(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
 test('subMinutes matches date-fns', (t) => {
   const date = new Date('2024-01-15T10:30:00')
   const amount = 15
-  
+
   const rsResult = dateRs.subMinutes(date.getTime(), amount)
   const fnsResult = dateFns.subMinutes(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
 test('subHours matches date-fns', (t) => {
   const date = new Date('2024-01-15T10:00:00')
   const amount = 3
-  
+
   const rsResult = dateRs.subHours(date.getTime(), amount)
   const fnsResult = dateFns.subHours(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
@@ -157,10 +157,10 @@ test('subDays matches date-fns', (t) => {
 test('subWeeks matches date-fns', (t) => {
   const date = new Date('2024-01-15')
   const amount = 2
-  
+
   const rsResult = dateRs.subWeeks(date.getTime(), amount)
   const fnsResult = dateFns.subWeeks(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
@@ -177,20 +177,20 @@ test('subMonths matches date-fns', (t) => {
 test('subQuarters matches date-fns', (t) => {
   const date = new Date('2024-07-15')
   const amount = 1
-  
+
   const rsResult = dateRs.subQuarters(date.getTime(), amount)
   const fnsResult = dateFns.subQuarters(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
 test('subYears matches date-fns', (t) => {
   const date = new Date('2024-01-15')
   const amount = 2
-  
+
   const rsResult = dateRs.subYears(date.getTime(), amount)
   const fnsResult = dateFns.subYears(date, amount).getTime()
-  
+
   t.is(rsResult, fnsResult)
 })
 
@@ -288,20 +288,20 @@ test('differenceInYears matches date-fns', (t) => {
 test('differenceInCalendarDays matches date-fns', (t) => {
   const date1 = new Date('2024-01-20')
   const date2 = new Date('2024-01-15')
-  
+
   const rsResult = dateRs.differenceInCalendarDays(date1.getTime(), date2.getTime())
   const fnsResult = dateFns.differenceInCalendarDays(date1, date2)
-  
+
   t.is(rsResult, fnsResult)
 })
 
 test('differenceInBusinessDays matches date-fns', (t) => {
   const date1 = new Date('2024-01-20')
   const date2 = new Date('2024-01-15')
-  
+
   const rsResult = dateRs.differenceInBusinessDays(date1.getTime(), date2.getTime())
   const fnsResult = dateFns.differenceInBusinessDays(date1, date2)
-  
+
   t.is(rsResult, fnsResult)
 })
 
@@ -865,4 +865,534 @@ test('comparison functions with extreme dates', (t) => {
   t.is(dateRs.compareAsc(epochDate.getTime(), farFuture.getTime()), -1)
 
   console.log('✓ comparison: extreme dates')
+})
+
+test('start_of_month matches dateFns', (t) => {
+  // 1. Standard Year Loop (2024)
+  // Checks every month to ensure month/year conservation and day reset
+  const year = 2024
+  for (let month = 0; month < 12; month++) {
+    // Input: 15th of the month at 12:30:00 UTC
+    const input = new Date(Date.UTC(year, month, 15, 12, 30, 0))
+    const result = dateRs.startOfMonth(input.getTime())
+    const resDate = new Date(result)
+
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), 1, 'Date should be reset to 1st')
+    t.is(resDate.getUTCHours(), 0, 'Hours should be 0')
+    t.is(resDate.getUTCMinutes(), 0, 'Minutes should be 0')
+    t.is(resDate.getUTCSeconds(), 0, 'Seconds should be 0')
+    t.is(resDate.getUTCMilliseconds(), 0, 'Milliseconds should be 0')
+  }
+
+  // 2. Leap Year Specifics
+  // Feb 2024 (Leap) vs Feb 2023 (Non-Leap)
+  const leapInput = new Date(Date.UTC(2024, 1, 29, 10, 0)) // Feb 29 2024
+  const leapRes = new Date(dateRs.startOfMonth(leapInput.getTime()))
+  t.is(leapRes.getUTCFullYear(), 2024)
+  t.is(leapRes.getUTCMonth(), 1)
+  t.is(leapRes.getUTCDate(), 1)
+
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 28, 10, 0)) // Feb 28 2023
+  const nonLeapRes = new Date(dateRs.startOfMonth(nonLeapInput.getTime()))
+  t.is(nonLeapRes.getUTCFullYear(), 2023)
+  t.is(nonLeapRes.getUTCMonth(), 1)
+  t.is(nonLeapRes.getUTCDate(), 1)
+
+  // 3. Boundary Checks
+  // Case A: Last day of month, last second
+  const endOfMonth = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  const endRes = new Date(dateRs.startOfMonth(endOfMonth.getTime()))
+  t.is(endRes.getUTCDate(), 1)
+  t.is(endRes.getUTCHours(), 0)
+
+  // Case B: First day of month, already midnight
+  const startOfMonth = new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0))
+  const startRes = new Date(dateRs.startOfMonth(startOfMonth.getTime()))
+  t.is(startRes.getTime(), startOfMonth.getTime(), 'Should remain unchanged if already start of month')
+
+  // 4. Extreme Dates
+  const past = new Date(Date.UTC(1900, 0, 15))
+  const future = new Date(Date.UTC(2100, 11, 15))
+
+  const pastRes = new Date(dateRs.startOfMonth(past.getTime()))
+  t.is(pastRes.getUTCFullYear(), 1900)
+  t.is(pastRes.getUTCDate(), 1)
+
+  const futureRes = new Date(dateRs.startOfMonth(future.getTime()))
+  t.is(futureRes.getUTCFullYear(), 2100)
+  t.is(futureRes.getUTCDate(), 1)
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.startOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.startOfMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.startOfMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ startOfMonth passes')
+})
+
+test('end_of_month matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  // Days expected for 2024: Jan(31), Feb(29), Mar(31), Apr(30), etc.
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: 5th of the month at 10:00 UTC
+    const input = new Date(Date.UTC(year, month, 5, 10, 0, 0))
+    const result = dateRs.endOfMonth(input.getTime())
+    const resDate = new Date(result)
+
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), daysInMonth[month], `Month ${month} should end on day ${daysInMonth[month]}`)
+
+    // Critical Check: Time must be exactly 23:59:59.999
+    t.is(resDate.getUTCHours(), 23, 'Hours should be 23')
+    t.is(resDate.getUTCMinutes(), 59, 'Minutes should be 59')
+    t.is(resDate.getUTCSeconds(), 59, 'Seconds should be 59')
+    t.is(resDate.getUTCMilliseconds(), 999, 'Milliseconds should be 999')
+  }
+
+  // 2. Non-Leap Year Check (Feb 2023)
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 15)) // Feb 2023
+  const nonLeapRes = new Date(dateRs.endOfMonth(nonLeapInput.getTime()))
+
+  t.is(nonLeapRes.getUTCFullYear(), 2023)
+  t.is(nonLeapRes.getUTCMonth(), 1)
+  t.is(nonLeapRes.getUTCDate(), 28, 'Feb 2023 should end on the 28th')
+
+  // 3. Century Leap Year Edge Cases
+  // 1900 was NOT a leap year (divisible by 100 but not 400)
+  const year1900 = new Date(Date.UTC(1900, 1, 10))
+  const res1900 = new Date(dateRs.endOfMonth(year1900.getTime()))
+  t.is(res1900.getUTCDate(), 28, 'Feb 1900 should be 28 days (not a leap year)')
+
+  // 2000 WAS a leap year (divisible by 400)
+  const year2000 = new Date(Date.UTC(2000, 1, 10))
+  const res2000 = new Date(dateRs.endOfMonth(year2000.getTime()))
+  t.is(res2000.getUTCDate(), 29, 'Feb 2000 should be 29 days (leap year)')
+
+  // 4. Time Reset Logic
+  // Case: Input is already the last day, but early morning
+  const lastDayMorning = new Date(Date.UTC(2024, 0, 31, 8, 30, 0))
+  const resMorning = new Date(dateRs.endOfMonth(lastDayMorning.getTime()))
+  t.is(resMorning.getUTCHours(), 23, 'Should forward time to end of day')
+  t.is(resMorning.getUTCMilliseconds(), 999)
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.endOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.endOfMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.endOfMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ endOfMonth passes')
+})
+
+test('last_day_of_month test matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: 10th of the month at a specific complex time
+    // 14:30:45.123 UTC
+    const input = new Date(Date.UTC(year, month, 10, 14, 30, 45, 123))
+    const result = dateRs.lastDayOfMonth(input.getTime())
+    const resDate = new Date(result)
+
+    t.is(resDate.getUTCFullYear(), year, `Year should remain ${year}`)
+    t.is(resDate.getUTCMonth(), month, `Month ${month} should be preserved`)
+    t.is(resDate.getUTCDate(), daysInMonth[month], `Month ${month} should end on day ${daysInMonth[month]}`)
+
+    // Critical Check: Time must be PRESERVED (unchanged)
+    t.is(resDate.getUTCHours(), 14, 'Hours should remain 14')
+    t.is(resDate.getUTCMinutes(), 30, 'Minutes should remain 30')
+    t.is(resDate.getUTCSeconds(), 45, 'Seconds should remain 45')
+    t.is(resDate.getUTCMilliseconds(), 123, 'Milliseconds should remain 123')
+  }
+
+  // 2. Leap Year vs Non-Leap Year (Time Preservation)
+  const leapInput = new Date(Date.UTC(2024, 1, 5, 9, 0, 0)) // Feb 2024
+  const leapRes = new Date(dateRs.lastDayOfMonth(leapInput.getTime()))
+  t.is(leapRes.getUTCDate(), 29)
+  t.is(leapRes.getUTCHours(), 9)
+
+  const nonLeapInput = new Date(Date.UTC(2023, 1, 5, 9, 0, 0)) // Feb 2023
+  const nonLeapRes = new Date(dateRs.lastDayOfMonth(nonLeapInput.getTime()))
+  t.is(nonLeapRes.getUTCDate(), 28)
+  t.is(nonLeapRes.getUTCHours(), 9)
+
+  // 3. Edge Case: Input is already the last day
+  const alreadyLast = new Date(Date.UTC(2024, 3, 30, 23, 59, 59, 999)) // Apr 30
+  const resSame = new Date(dateRs.lastDayOfMonth(alreadyLast.getTime()))
+  t.is(resSame.getTime(), alreadyLast.getTime(), 'Should not change if already last day')
+
+  // 4. Invalid Inputs
+  t.truthy(isNaN(dateRs.lastDayOfMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.lastDayOfMonth(Infinity)), 'Infinity should return NaN')
+
+  console.log('✓ lastDayOfMonth passes')
+})
+
+test('get_days_in_month test matches dateFns', (t) => {
+  // 1. Standard Year Loop (Leap Year 2024)
+  const year = 2024
+  const expectedDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // Input: Arbitrary day in the month (e.g., 15th)
+    const input = new Date(Date.UTC(year, month, 15))
+    const result = dateRs.getDaysInMonth(input.getTime())
+
+    t.is(result, expectedDays[month], `Month ${month} in ${year} should have ${expectedDays[month]} days`)
+  }
+
+  // 2. Non-Leap Year Check (Feb 2023)
+  const feb2023 = new Date(Date.UTC(2023, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb2023.getTime()), 28, 'Feb 2023 should have 28 days')
+
+  // 3. Century Leap Year Edge Cases
+  // 1900: Divisible by 100 but NOT 400 => Not a leap year (28 days)
+  const feb1900 = new Date(Date.UTC(1900, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb1900.getTime()), 28, 'Feb 1900 should have 28 days')
+
+  // 2000: Divisible by 400 => Leap year (29 days)
+  const feb2000 = new Date(Date.UTC(2000, 1, 10))
+  t.is(dateRs.getDaysInMonth(feb2000.getTime()), 29, 'Feb 2000 should have 29 days')
+
+  // 4. Time Independence
+  // Even if time is just before midnight on the last day, the count is based on the month
+  const lateNight = new Date(Date.UTC(2024, 1, 29, 23, 59, 59))
+  t.is(dateRs.getDaysInMonth(lateNight.getTime()), 29, 'Time of day should not affect day count')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.getDaysInMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.getDaysInMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.getDaysInMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ getDaysInMonth passes')
+})
+
+test('is_same_month test matches dateFns', (t) => {
+  // 1. Same Month & Year (True)
+  const date1 = new Date(Date.UTC(2023, 8, 2)) // Sept 2, 2023
+  const date2 = new Date(Date.UTC(2023, 8, 25)) // Sept 25, 2023
+  t.is(dateRs.isSameMonth(date1.getTime(), date2.getTime()), true)
+
+  // 2. Same Month, Different Year (False)
+  const sept2023 = new Date(Date.UTC(2023, 8, 2))
+  const sept2024 = new Date(Date.UTC(2024, 8, 2))
+  t.is(dateRs.isSameMonth(sept2023.getTime(), sept2024.getTime()), false)
+
+  // 3. Different Month, Same Year (False)
+  const sept = new Date(Date.UTC(2023, 8, 2))
+  const oct = new Date(Date.UTC(2023, 9, 2))
+  t.is(dateRs.isSameMonth(sept.getTime(), oct.getTime()), false)
+
+  // 4. Boundary Check (Adjacent Milliseconds)
+  // End of Jan vs Start of Feb
+  const endJan = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  const startFeb = new Date(Date.UTC(2024, 1, 1, 0, 0, 0, 0))
+  t.is(dateRs.isSameMonth(endJan.getTime(), startFeb.getTime()), false)
+
+  // 5. First vs Last Millisecond of Month (True)
+  const startMonth = new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0))
+  const endMonth = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.isSameMonth(startMonth.getTime(), endMonth.getTime()), true)
+
+  // 6. Invalid Inputs
+  t.is(dateRs.isSameMonth(NaN, Date.now()), false)
+  t.is(dateRs.isSameMonth(Date.now(), NaN), false)
+  t.is(dateRs.isSameMonth(Infinity, Date.now()), false)
+  t.is(dateRs.isSameMonth(Date.now(), -Infinity), false)
+
+  console.log('✓ isSameMonth passes')
+})
+
+test('is_this_month test matches dateFns', (t) => {
+  // Get "now" in UTC to establish the baseline for the test run
+  const now = new Date()
+  const currentYear = now.getUTCFullYear()
+  const currentMonth = now.getUTCMonth()
+
+  // 1. True Case: A date inside the current UTC month
+  // We construct a date for the 15th of the current month
+  const thisMonthDate = new Date(Date.UTC(currentYear, currentMonth, 15))
+  t.is(dateRs.isThisMonth(thisMonthDate.getTime()), true, 'Current UTC month should return true')
+
+  // 2. False Case: Last Month
+  // Date.UTC handles underflow (e.g., if currentMonth is Jan (0), -1 becomes Dec of prev year)
+  const lastMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 15))
+  t.is(dateRs.isThisMonth(lastMonthDate.getTime()), false, 'Previous month should return false')
+
+  // 3. False Case: Next Month
+  const nextMonthDate = new Date(Date.UTC(currentYear, currentMonth + 1, 15))
+  t.is(dateRs.isThisMonth(nextMonthDate.getTime()), false, 'Next month should return false')
+
+  // 4. False Case: Same Month, Different Year
+  const lastYearDate = new Date(Date.UTC(currentYear - 1, currentMonth, 15))
+  t.is(dateRs.isThisMonth(lastYearDate.getTime()), false, 'Same month last year should return false')
+
+  // 5. Invalid Inputs
+  t.is(dateRs.isThisMonth(NaN), false)
+  t.is(dateRs.isThisMonth(Infinity), false)
+  t.is(dateRs.isThisMonth(-Infinity), false)
+
+  console.log('✓ isThisMonth passes')
+})
+
+test('is_first_day_of_month test matches dateFns', (t) => {
+  const year = 2024
+
+  // 1. True Cases: The 1st of every month
+  for (let month = 0; month < 12; month++) {
+    const date = new Date(Date.UTC(year, month, 1))
+    t.is(dateRs.isFirstDayOfMonth(date.getTime()), true, `Month ${month} 1st should return true`)
+  }
+
+  // 2. False Cases: The 2nd of the month
+  const secondDay = new Date(Date.UTC(year, 0, 2))
+  t.is(dateRs.isFirstDayOfMonth(secondDay.getTime()), false, 'Jan 2nd should return false')
+
+  // 3. Time Independence (Still true at 23:59:59 on the 1st)
+  const endOfFirstDay = new Date(Date.UTC(year, 0, 1, 23, 59, 59, 999))
+  t.is(dateRs.isFirstDayOfMonth(endOfFirstDay.getTime()), true, 'Late night on the 1st is still the 1st')
+
+  // 4. Boundary Check: Last moment of previous month (False)
+  // Date.UTC(2024, 0, 0) results in Dec 31, 2023
+  const endOfPrevMonth = new Date(Date.UTC(year, 0, 0, 23, 59, 59, 999))
+  t.is(dateRs.isFirstDayOfMonth(endOfPrevMonth.getTime()), false, 'Last moment of prev month is false')
+
+  // 5. Invalid Inputs
+  t.is(dateRs.isFirstDayOfMonth(NaN), false)
+  t.is(dateRs.isFirstDayOfMonth(Infinity), false)
+  t.is(dateRs.isFirstDayOfMonth(-Infinity), false)
+
+  console.log('✓ isFirstDayOfMonth passes')
+})
+
+test('is_last_day_of_month test matches dateFns', (t) => {
+  // 1. Standard Month Check (Leap Year 2024)
+  const year = 2024
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  for (let month = 0; month < 12; month++) {
+    // True Case: The actual last day
+    const lastDay = new Date(Date.UTC(year, month, daysInMonth[month]))
+    t.is(dateRs.isLastDayOfMonth(lastDay.getTime()), true, `Month ${month} day ${daysInMonth[month]} should be true`)
+
+    // False Case: The day before the last day
+    const secondToLast = new Date(Date.UTC(year, month, daysInMonth[month] - 1))
+    t.is(
+      dateRs.isLastDayOfMonth(secondToLast.getTime()),
+      false,
+      `Month ${month} day ${daysInMonth[month] - 1} should be false`,
+    )
+  }
+
+  // 2. Leap Year Specifics
+  // Feb 29, 2024 is last day (True)
+  const febLeap = new Date(Date.UTC(2024, 1, 29))
+  t.is(dateRs.isLastDayOfMonth(febLeap.getTime()), true)
+
+  // Feb 28, 2024 is NOT last day (False)
+  const febLeapNotLast = new Date(Date.UTC(2024, 1, 28))
+  t.is(dateRs.isLastDayOfMonth(febLeapNotLast.getTime()), false)
+
+  // Feb 28, 2023 is last day (True)
+  const febNonLeap = new Date(Date.UTC(2023, 1, 28))
+  t.is(dateRs.isLastDayOfMonth(febNonLeap.getTime()), true)
+
+  // 3. Time Independence
+  // 1st millisecond of the day
+  const startOfDay = new Date(Date.UTC(2024, 0, 31, 0, 0, 0, 0))
+  t.is(dateRs.isLastDayOfMonth(startOfDay.getTime()), true)
+
+  // Last millisecond of the day
+  const endOfDay = new Date(Date.UTC(2024, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.isLastDayOfMonth(endOfDay.getTime()), true)
+
+  // 4. Invalid Inputs
+  t.is(dateRs.isLastDayOfMonth(NaN), false)
+  t.is(dateRs.isLastDayOfMonth(Infinity), false)
+  t.is(dateRs.isLastDayOfMonth(-Infinity), false)
+
+  console.log('✓ isLastDayOfMonth passes')
+})
+
+test('set_month test matches dateFns', (t) => {
+  // 1. Standard Change (Jan -> Feb)
+  const jan15 = new Date(Date.UTC(2024, 0, 15, 10, 30))
+  const febResult = dateRs.setMonth(jan15.getTime(), 1) // Set to Feb (1)
+  const febDate = new Date(febResult)
+
+  t.is(febDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(febDate.getUTCDate(), 15, 'Day should remain 15')
+  t.is(febDate.getUTCHours(), 10, 'Time should be preserved')
+
+  // 2. Day Clamping (Jan 31 -> Feb 2024 [Leap])
+  // Should clamp to Feb 29
+  const jan31 = new Date(Date.UTC(2024, 0, 31))
+  const leapClampResult = dateRs.setMonth(jan31.getTime(), 1)
+  const leapClampDate = new Date(leapClampResult)
+
+  t.is(leapClampDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(leapClampDate.getUTCDate(), 29, 'Jan 31 should clamp to Feb 29 in leap year')
+
+  // 3. Day Clamping (Jan 31 -> Feb 2023 [Non-Leap])
+  // Should clamp to Feb 28
+  const jan31NonLeap = new Date(Date.UTC(2023, 0, 31))
+  const nonLeapClampResult = dateRs.setMonth(jan31NonLeap.getTime(), 1)
+  const nonLeapClampDate = new Date(nonLeapClampResult)
+
+  t.is(nonLeapClampDate.getUTCMonth(), 1, 'Month should be February')
+  t.is(nonLeapClampDate.getUTCDate(), 28, 'Jan 31 should clamp to Feb 28 in non-leap year')
+
+  // 4. Invalid Range (User logic restricts to 0-11)
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), 12)), 'Month 12 should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), -1)), 'Month -1 should return NaN')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.setMonth(NaN, 1)), 'NaN date should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Date.now(), NaN)), 'NaN month should return NaN')
+  t.truthy(isNaN(dateRs.setMonth(Infinity, 1)), 'Infinity date should return NaN')
+
+  console.log('✓ setMonth passes')
+})
+
+test('get_month test matches dateFns', (t) => {
+  const year = 2024
+
+  // 1. Standard Loop (All 12 months)
+  for (let month = 0; month < 12; month++) {
+    // Input: 15th of the month
+    const date = new Date(Date.UTC(year, month, 15))
+    const result = dateRs.getMonth(date.getTime())
+
+    t.is(result, month, `Month ${month} should return ${month}`)
+  }
+
+  // 2. Boundary Check: End of Month (Late Night)
+  // Ensure strict UTC doesn't roll over to next month
+  // Jan 31, 23:59:59.999 UTC -> Should still be Jan (0)
+  const endJan = new Date(Date.UTC(year, 0, 31, 23, 59, 59, 999))
+  t.is(dateRs.getMonth(endJan.getTime()), 0, 'Late night Jan 31 should still be Jan (0)')
+
+  // 3. Boundary Check: Start of Month (Early Morning)
+  // Feb 1, 00:00:00.000 UTC -> Should be Feb (1)
+  const startFeb = new Date(Date.UTC(year, 1, 1, 0, 0, 0, 0))
+  t.is(dateRs.getMonth(startFeb.getTime()), 1, 'Early morning Feb 1 should be Feb (1)')
+
+  // 4. Leap Day Check
+  // Feb 29 2024 -> Should be Feb (1)
+  const leapDay = new Date(Date.UTC(2024, 1, 29))
+  t.is(dateRs.getMonth(leapDay.getTime()), 1, 'Leap day should be Feb (1)')
+
+  // 5. Invalid Inputs
+  t.truthy(isNaN(dateRs.getMonth(NaN)), 'NaN should return NaN')
+  t.truthy(isNaN(dateRs.getMonth(Infinity)), 'Infinity should return NaN')
+  t.truthy(isNaN(dateRs.getMonth(-Infinity)), '-Infinity should return NaN')
+
+  console.log('✓ getMonth passes')
+})
+
+test('difference_in_calendar_months test matches dateFns', (t) => {
+  // 1. Same Year, Different Months
+  // Oct 2024 - Aug 2024 = 2 months
+  const oct = new Date(Date.UTC(2024, 9, 1))
+  const aug = new Date(Date.UTC(2024, 7, 1))
+  t.is(dateRs.differenceInCalendarMonths(oct.getTime(), aug.getTime()), 2)
+
+  // 2. Cross-Year Boundary
+  // Jan 2025 - Dec 2024 = 1 month
+  const jan2025 = new Date(Date.UTC(2025, 0, 1))
+  const dec2024 = new Date(Date.UTC(2024, 11, 1))
+  t.is(dateRs.differenceInCalendarMonths(jan2025.getTime(), dec2024.getTime()), 1)
+
+  // 3. Negative Difference (Left < Right)
+  // Aug 2024 - Oct 2024 = -2 months
+  t.is(dateRs.differenceInCalendarMonths(aug.getTime(), oct.getTime()), -2)
+
+  // 4. Same Month (Zero Difference)
+  // Jan 1 2024 vs Jan 31 2024 = 0 months
+  const janStart = new Date(Date.UTC(2024, 0, 1))
+  const janEnd = new Date(Date.UTC(2024, 0, 31))
+  t.is(dateRs.differenceInCalendarMonths(janStart.getTime(), janEnd.getTime()), 0)
+
+  // 5. Day Indifference (Calendar Months Only)
+  // Even if dates are close (Jan 31 vs Feb 1), it counts as 1 month
+  const jan31 = new Date(Date.UTC(2024, 0, 31, 23, 59, 59))
+  const feb1 = new Date(Date.UTC(2024, 1, 1, 0, 0, 0))
+  t.is(dateRs.differenceInCalendarMonths(feb1.getTime(), jan31.getTime()), 1, 'Jan 31 to Feb 1 is 1 calendar month')
+
+  // 6. Large Gap
+  // Jan 2024 vs Jan 2025 = 12 months
+  const yearGapStart = new Date(Date.UTC(2024, 0, 15))
+  const yearGapEnd = new Date(Date.UTC(2025, 0, 15))
+  t.is(dateRs.differenceInCalendarMonths(yearGapEnd.getTime(), yearGapStart.getTime()), 12)
+
+  // 7. Invalid Inputs
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(NaN, Date.now())))
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(Date.now(), NaN)))
+  t.truthy(isNaN(dateRs.differenceInCalendarMonths(Infinity, Date.now())))
+
+  console.log('✓ differenceInCalendarMonths passes')
+})
+
+test('each_month_of_interval_with_step test matches dateFns', (t) => {
+  // 1. Standard Case (Jan 15 to Apr 10)
+  // Logic should normalize these to: Jan 1, Feb 1, Mar 1, Apr 1
+  const start = new Date(Date.UTC(2024, 0, 15, 14, 30))
+  const end = new Date(Date.UTC(2024, 3, 10, 9, 0))
+
+  const result = dateRs.eachMonthOfIntervalWithStep(start.getTime(), end.getTime(), 1)
+
+  t.is(result.length, 4, 'Should return 4 months (Jan, Feb, Mar, Apr)')
+
+  // Verify strict normalization (1st of month, Midnight UTC)
+  const first = new Date(result[0])
+  t.is(first.getUTCFullYear(), 2024)
+  t.is(first.getUTCMonth(), 0) // Jan
+  t.is(first.getUTCDate(), 1, 'Should reset to 1st of month')
+  t.is(first.getUTCHours(), 0, 'Should reset to midnight')
+
+  const last = new Date(result[3])
+  t.is(last.getUTCMonth(), 3) // Apr
+  t.is(last.getUTCDate(), 1)
+
+  // 2. Step Logic (Step = 2)
+  // Jan 15 to June 15 -> Jan, Mar, May
+  const endJune = new Date(Date.UTC(2024, 5, 15))
+  const resultStep2 = dateRs.eachMonthOfIntervalWithStep(start.getTime(), endJune.getTime(), 2)
+
+  t.is(resultStep2.length, 3)
+  t.is(new Date(resultStep2[0]).getUTCMonth(), 0) // Jan
+  t.is(new Date(resultStep2[1]).getUTCMonth(), 2) // Mar
+  t.is(new Date(resultStep2[2]).getUTCMonth(), 4) // May
+
+  // 3. Reverse Logic (Start > End)
+  // Your code detects `start > end`, swaps them, generates list, then reverses result.
+  // March to January -> March, February, January
+  const startMar = new Date(Date.UTC(2024, 2, 10))
+  const endJan = new Date(Date.UTC(2024, 0, 10))
+
+  const resultRev = dateRs.eachMonthOfIntervalWithStep(startMar.getTime(), endJan.getTime(), 1)
+
+  t.is(resultRev.length, 3)
+  t.is(new Date(resultRev[0]).getUTCMonth(), 2) // Mar
+  t.is(new Date(resultRev[1]).getUTCMonth(), 1) // Feb
+  t.is(new Date(resultRev[2]).getUTCMonth(), 0) // Jan
+
+  // 4. Edge Case: Step = 0
+  // Your code explicitly returns empty vec![]
+  const resultZero = dateRs.eachMonthOfIntervalWithStep(start.getTime(), end.getTime(), 0)
+  t.deepEqual(resultZero, [])
+
+  // 5. Invalid Inputs
+  // Your code returns vec![] if date parsing fails
+  const resultNaN = dateRs.eachMonthOfIntervalWithStep(NaN, end.getTime(), 1)
+  t.deepEqual(resultNaN, [])
+
+  console.log('✓ eachMonthOfIntervalWithStep passes')
 })

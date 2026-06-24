@@ -4,6 +4,7 @@ use napi::bindgen_prelude::{Either, JsObjectValue, Object, Undefined};
 use napi_derive::napi;
 use time::format_description::well_known::Iso8601;
 use time::util::days_in_month;
+use time::Time;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset, Weekday};
 
 #[inline(always)]
@@ -20,27 +21,6 @@ fn from_ms_local(ms: f64) -> Option<OffsetDateTime> {
 #[inline(always)]
 fn to_ms(dt: OffsetDateTime) -> f64 {
   dt.unix_timestamp_nanos() as f64 / 1_000_000.0
-}
-
-fn add_months_local_internal(ms: f64, amount: i32) -> Option<OffsetDateTime> {
-  let dt = from_ms_local(ms)?;
-  let mut year = dt.year();
-  let month0 = dt.month() as i32 - 1;
-  let day = dt.day();
-
-  let total = month0 + amount;
-  year += total.div_euclid(12);
-  let month_index = total.rem_euclid(12);
-
-  let month = Month::try_from((month_index + 1) as u8).ok()?;
-
-  let dim = days_in_month(month, year);
-  let clamped_day = day.min(dim);
-
-  let tmp = dt.replace_day(1).ok()?;
-  let tmp = tmp.replace_year(year).ok()?;
-  let tmp = tmp.replace_month(month).ok()?;
-  tmp.replace_day(clamped_day).ok()
 }
 
 #[napi]
@@ -73,13 +53,41 @@ pub fn add_weeks(date_ms: f64, amount: f64) -> f64 {
   date_ms + amount * 604_800_000.0
 }
 
+// Helper for internal use to avoid code duplication
+fn add_months_utc_internal(ms: f64, amount: i32) -> Option<OffsetDateTime> {
+  // 1. Parse as Strict UTC
+  let nanos = (ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).ok()?;
+
+  let mut year = dt.year();
+  let month0 = dt.month() as i32 - 1;
+  let day = dt.day();
+
+  // 2. Calculate new Month/Year
+  let total = month0 + amount;
+  year += total.div_euclid(12);
+  let month_index = total.rem_euclid(12);
+
+  let month = Month::try_from((month_index + 1) as u8).ok()?;
+
+  // 3. Clamp Day (e.g. Jan 31 -> Feb 28/29)
+  let dim = days_in_month(month, year);
+  let clamped_day = day.min(dim);
+
+  // 4. Construct new date preserving time
+  let tmp = dt.replace_day(1).ok()?;
+  let tmp = tmp.replace_year(year).ok()?;
+  let tmp = tmp.replace_month(month).ok()?;
+  tmp.replace_day(clamped_day).ok()
+}
+
 #[napi]
 pub fn add_months(date_ms: f64, amount: f64) -> f64 {
   if !date_ms.is_finite() || !amount.is_finite() {
     return f64::NAN;
   }
 
-  match add_months_local_internal(date_ms, amount.trunc() as i32) {
+  match add_months_utc_internal(date_ms, amount.trunc() as i32) {
     Some(dt) => to_ms(dt),
     None => f64::NAN,
   }
@@ -147,7 +155,9 @@ pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
     return f64::NAN;
   }
 
-  let Some(dt) = from_ms_local(date_ms) else {
+  // FIXED: Use UTC instead of from_ms_local
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
     return f64::NAN;
   };
 
@@ -168,12 +178,10 @@ pub fn add_business_days(date_ms: f64, amount: f64) -> f64 {
 
     if sign > 0.0 {
       current_idx = (current_idx + 1) % 7;
+    } else if current_idx == 0 {
+      current_idx = 6;
     } else {
-      if current_idx == 0 {
-        current_idx = 6;
-      } else {
-        current_idx -= 1;
-      }
+      current_idx -= 1;
     }
 
     let is_weekend = current_idx >= 5;
@@ -278,18 +286,20 @@ pub fn difference_in_calendar_days(later_ms: f64, earlier_ms: f64) -> f64 {
   if !later_ms.is_finite() || !earlier_ms.is_finite() {
     return f64::NAN;
   }
-  let (Some(later), Some(earlier)) = (from_ms_local(later_ms), from_ms_local(earlier_ms)) else {
+
+  let later_nanos = (later_ms * 1_000_000.0) as i128;
+  let earlier_nanos = (earlier_ms * 1_000_000.0) as i128;
+
+  let (Ok(later), Ok(earlier)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(later_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(earlier_nanos),
+  ) else {
     return f64::NAN;
   };
 
-  let later_midnight = later
-    .date()
-    .with_time(time::Time::MIDNIGHT)
-    .assume_offset(later.offset());
-  let earlier_midnight = earlier
-    .date()
-    .with_time(time::Time::MIDNIGHT)
-    .assume_offset(earlier.offset());
+  // Strip time by setting to Midnight UTC
+  let later_midnight = later.replace_time(time::Time::MIDNIGHT);
+  let earlier_midnight = earlier.replace_time(time::Time::MIDNIGHT);
 
   let later_ts = to_ms(later_midnight);
   let earlier_ts = to_ms(earlier_midnight);
@@ -302,14 +312,19 @@ pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
   if !later_ms.is_finite() || !earlier_ms.is_finite() {
     return f64::NAN;
   }
+
+  // Uses the corrected UTC-based calendar_days function above
   let diff = difference_in_calendar_days(later_ms, earlier_ms);
   if diff == 0.0 {
     return 0.0;
   }
 
-  let Some(earlier_dt) = from_ms_local(earlier_ms) else {
+  // Parse earlier_ms as UTC for weekday calculation
+  let earlier_nanos = (earlier_ms * 1_000_000.0) as i128;
+  let Ok(earlier_dt) = OffsetDateTime::from_unix_timestamp_nanos(earlier_nanos) else {
     return f64::NAN;
   };
+
   let mut current_idx = earlier_dt.weekday().number_from_monday() - 1;
 
   let sign = if diff < 0.0 { -1.0 } else { 1.0 };
@@ -350,14 +365,26 @@ pub fn difference_in_business_days(later_ms: f64, earlier_ms: f64) -> f64 {
 
 #[napi]
 pub fn difference_in_months(a_ms: f64, b_ms: f64) -> f64 {
-  let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
+  if !a_ms.is_finite() || !b_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let a_nanos = (a_ms * 1_000_000.0) as i128;
+  let b_nanos = (b_ms * 1_000_000.0) as i128;
+
+  let (Ok(a), Ok(b)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(a_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(b_nanos),
+  ) else {
     return f64::NAN;
   };
+
   let sign = if a >= b { 1 } else { -1 };
   let years = a.year() - b.year();
   let mut months = years * 12 + (a.month() as i32 - b.month() as i32);
 
-  let shifted = add_months_local_internal(b_ms, months)
+  // Use the new UTC internal helper for the check
+  let shifted = add_months_utc_internal(b_ms, months)
     .map(to_ms)
     .unwrap_or(f64::NAN);
 
@@ -575,7 +602,9 @@ pub fn is_weekend(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  // FIXED: Use UTC
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   matches!(dt.weekday(), Weekday::Saturday | Weekday::Sunday)
 }
 
@@ -584,7 +613,8 @@ pub fn is_saturday(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   dt.weekday() == Weekday::Saturday
 }
 
@@ -593,13 +623,21 @@ pub fn is_sunday(date_ms: f64) -> bool {
   if !date_ms.is_finite() {
     return false;
   }
-  let dt = from_ms_local(date_ms).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let dt = OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH);
   dt.weekday() == Weekday::Sunday
 }
 
 #[napi]
 pub fn is_same_day(a_ms: f64, b_ms: f64) -> bool {
-  let (Some(a), Some(b)) = (from_ms_local(a_ms), from_ms_local(b_ms)) else {
+  // FIXED: Use UTC
+  let a_nanos = (a_ms * 1_000_000.0) as i128;
+  let b_nanos = (b_ms * 1_000_000.0) as i128;
+
+  let (Ok(a), Ok(b)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(a_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(b_nanos),
+  ) else {
     return false;
   };
   a.date() == b.date()
@@ -696,7 +734,14 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
     return vec![];
   }
 
-  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+  // FIXED: Use UTC
+  let start_nanos = (start_ms * 1_000_000.0) as i128;
+  let end_nanos = (end_ms * 1_000_000.0) as i128;
+
+  let (Ok(start), Ok(end)) = (
+    OffsetDateTime::from_unix_timestamp_nanos(start_nanos),
+    OffsetDateTime::from_unix_timestamp_nanos(end_nanos),
+  ) else {
     return vec![];
   };
 
@@ -704,7 +749,7 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
   let end_time = if reversed { start } else { end };
   let date_obj = if reversed { end } else { start };
 
-  let offset = date_obj.offset();
+  // UTC has offset 0
   let mut date = date_obj.date();
 
   let mut step = step;
@@ -715,7 +760,8 @@ pub fn each_day_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i64>) -
 
   let mut res = vec![];
   loop {
-    let dt = date.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+    // assume_utc() instead of assume_offset()
+    let dt = date.with_time(time::Time::MIDNIGHT).assume_utc();
     if dt > end_time {
       break;
     }
@@ -734,7 +780,7 @@ pub fn each_weekend_of_interval(start_ms: f64, end_ms: f64) -> Vec<f64> {
     return vec![];
   };
 
-  let mut reversed = start > end;
+  let reversed = start > end;
   let end_time = if reversed { start } else { end };
   let date_obj = if reversed { end } else { start };
 
@@ -823,41 +869,80 @@ pub fn each_month_of_interval(start_ms: f64, end_ms: f64, step_opt: Option<i32>)
     return vec![];
   }
 
-  let (Some(start), Some(end)) = (from_ms_local(start_ms), from_ms_local(end_ms)) else {
+  if !start_ms.is_finite() || !end_ms.is_finite() {
+    return vec![];
+  }
+
+  // 1. Strict UTC Parsing (No Local Time)
+  let start_nanos = (start_ms * 1_000_000.0) as i128;
+  let end_nanos = (end_ms * 1_000_000.0) as i128;
+
+  let Ok(start_dt) = OffsetDateTime::from_unix_timestamp_nanos(start_nanos) else {
+    return vec![];
+  };
+  let Ok(end_dt) = OffsetDateTime::from_unix_timestamp_nanos(end_nanos) else {
     return vec![];
   };
 
-  let mut reversed = start > end;
-  let end_time = if reversed { start } else { end };
-  let date = if reversed { end } else { start };
+  // 2. Handle Reversal and Step Direction
+  let mut reversed = start_dt > end_dt;
+  let mut current_step = step;
 
-  let offset = date.offset();
-  let mut year = date.year();
-  let mut month = date.month();
-
-  let mut step = step;
-  if step < 0 {
-    step = -step;
+  // If step is negative, invert direction logic
+  if current_step < 0 {
+    current_step = -current_step;
     reversed = !reversed;
   }
 
-  let mut res = vec![];
-  loop {
-    let d = Date::from_calendar_date(year, month, 1).unwrap();
-    let dt = d.with_time(time::Time::MIDNIGHT).assume_offset(offset);
+  // Define boundaries based on normalized direction
+  let (start_limit, end_limit) = if start_dt > end_dt {
+    (end_dt, start_dt)
+  } else {
+    (start_dt, end_dt)
+  };
 
-    if dt > end_time {
+  // 3. Initialize Loop Variables
+  let mut year = start_limit.year();
+  let mut month = start_limit.month();
+  let mut res = Vec::new();
+
+  // 4. Calendar Interval Loop
+  loop {
+    // Normalize to 1st of the month
+    let Ok(date_part) = Date::from_calendar_date(year, month, 1) else {
+      break;
+    };
+
+    // Construct UTC Midnight (Crucial for Predictable UTC)
+    let dt = date_part.with_time(Time::MIDNIGHT).assume_utc();
+
+    // Stop if we have exceeded the end boundary
+    if dt > end_limit {
       break;
     }
 
-    res.push(to_ms(dt));
+    // Add to result
+    res.push((dt.unix_timestamp_nanos() / 1_000_000) as f64);
 
-    let idx = month as i32 - 1 + step;
-    year += idx.div_euclid(12);
-    month = Month::try_from((idx.rem_euclid(12) + 1) as u8).unwrap();}
+    // Calculate next month using integer arithmetic (avoiding Duration/DST issues)
+    // Month is 1-indexed in `time` crate, so we shift to 0-index for math
+    let month_idx = month as i32 - 1 + current_step;
+
+    // Update Year
+    year += month_idx.div_euclid(12);
+
+    // Update Month (Map back to 1-indexed Enum)
+    let Ok(next_month) = Month::try_from((month_idx.rem_euclid(12) + 1) as u8) else {
+      break;
+    };
+    month = next_month;
+  }
+
+  // 5. Apply Reversal if needed (e.g., start > end originally)
   if reversed {
     res.reverse();
   }
+
   res
 }
 
@@ -1014,4 +1099,252 @@ pub fn start_of_day(timestamp: f64) -> f64 {
     }
     Err(_) => f64::NAN,
   }
+}
+
+#[napi]
+pub fn start_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  let Ok(dt) = OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  match dt.replace_day(1) {
+    Ok(start_of_month_date) => {
+      let start_midnight = start_of_month_date.replace_time(Time::MIDNIGHT);
+
+      (start_midnight.unix_timestamp_nanos() / 1_000_000) as f64
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn end_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  let days = time::util::days_in_month(month, year);
+
+  match dt.replace_day(days) {
+    Ok(last_day) => {
+      let end_time = time::Time::from_hms_milli(23, 59, 59, 999).unwrap();
+      let end = last_day.replace_time(end_time);
+      (end.unix_timestamp_nanos() / 1_000_000) as f64
+    }
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn last_day_of_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  let days = time::util::days_in_month(month, year);
+
+  match dt.replace_day(days) {
+    Ok(last_day) => (last_day.unix_timestamp_nanos() / 1_000_000) as f64,
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn get_days_in_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  time::util::days_in_month(month, year) as f64
+}
+
+#[napi]
+pub fn is_same_month(date_left_ms: f64, date_right_ms: f64) -> bool {
+  if !date_left_ms.is_finite() || !date_right_ms.is_finite() {
+    return false;
+  }
+
+  let left_nanos = (date_left_ms * 1_000_000.0) as i128;
+  let right_nanos = (date_right_ms * 1_000_000.0) as i128;
+
+  let (Ok(left), Ok(right)) = (
+    time::OffsetDateTime::from_unix_timestamp_nanos(left_nanos),
+    time::OffsetDateTime::from_unix_timestamp_nanos(right_nanos),
+  ) else {
+    return false;
+  };
+
+  left.year() == right.year() && left.month() == right.month()
+}
+
+#[napi]
+pub fn is_this_month(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // 1. Convert input timestamp to UTC DateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return false;
+  };
+
+  // 2. Get current system time in UTC
+  let now = time::OffsetDateTime::now_utc();
+
+  // 3. Compare Year and Month
+  dt.year() == now.year() && dt.month() == now.month()
+}
+
+#[napi]
+pub fn is_first_day_of_month(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // Convert timestamp directly to UTC OffsetDateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return false;
+  };
+
+  dt.day() == 1
+}
+
+#[napi]
+pub fn is_last_day_of_month(date_ms: f64) -> bool {
+  if !date_ms.is_finite() {
+    return false;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // Convert directly to UTC OffsetDateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return false;
+  };
+
+  let year = dt.year();
+  let month = dt.month();
+  let days_in_month = time::util::days_in_month(month, year);
+
+  dt.day() == days_in_month
+}
+
+#[napi]
+pub fn set_month(date_ms: f64, month: f64) -> f64 {
+  if !date_ms.is_finite() || !month.is_finite() {
+    return f64::NAN;
+  }
+
+  let month_int = month.trunc() as i32;
+
+  if !(0..=11).contains(&month_int) {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  let Ok(new_month) = time::Month::try_from((month_int + 1) as u8) else {
+    return f64::NAN;
+  };
+
+  let year = dt.year();
+  let current_day = dt.day();
+
+  let days_in_new_month = time::util::days_in_month(new_month, year);
+
+  // Clamp the day BEFORE changing the month
+  // (Prevents "Jan 31 -> Feb" from erroring due to invalid intermediate date)
+  let clamped_day = current_day.min(days_in_new_month);
+
+  match dt.replace_day(clamped_day) {
+    Ok(with_safe_day) => match with_safe_day.replace_month(new_month) {
+      Ok(final_dt) => (final_dt.unix_timestamp_nanos() / 1_000_000) as f64,
+      Err(_) => f64::NAN,
+    },
+    Err(_) => f64::NAN,
+  }
+}
+
+#[napi]
+pub fn get_month(date_ms: f64) -> f64 {
+  if !date_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let nanos = (date_ms * 1_000_000.0) as i128;
+
+  // Convert directly to UTC OffsetDateTime
+  let Ok(dt) = time::OffsetDateTime::from_unix_timestamp_nanos(nanos) else {
+    return f64::NAN;
+  };
+
+  // Return 0-indexed month (JavaScript convention: Jan=0, Dec=11)
+  // time::Month is 1-indexed (Jan=1)
+  (dt.month() as u8 - 1) as f64
+}
+
+#[napi]
+pub fn difference_in_calendar_months(date_left_ms: f64, date_right_ms: f64) -> f64 {
+  if !date_left_ms.is_finite() || !date_right_ms.is_finite() {
+    return f64::NAN;
+  }
+
+  let left_nanos = (date_left_ms * 1_000_000.0) as i128;
+  let right_nanos = (date_right_ms * 1_000_000.0) as i128;
+
+  let (Ok(left), Ok(right)) = (
+    time::OffsetDateTime::from_unix_timestamp_nanos(left_nanos),
+    time::OffsetDateTime::from_unix_timestamp_nanos(right_nanos),
+  ) else {
+    return f64::NAN;
+  };
+
+  let year_diff = left.year() - right.year();
+  // Cast months (u8) to i32 to allow for negative subtraction results
+  let month_diff = left.month() as i32 - right.month() as i32;
+
+  (year_diff * 12 + month_diff) as f64
+}
+
+#[napi]
+pub fn each_month_of_interval_with_step(
+  start_ms: f64,
+  end_ms: f64,
+  step_opt: Option<i32>,
+) -> Vec<f64> {
+  each_month_of_interval(start_ms, end_ms, step_opt)
 }
